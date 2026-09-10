@@ -63,6 +63,39 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
     loadData();
   }, [slug]);
 
+  // ALL HOOKS MUST BE CALLED UNCONDITIONALLY BEFORE CONDITIONAL RETURNS
+  const sortedEpisodes = useMemo(() => {
+    if (!anime?.episodes || !Array.isArray(anime.episodes)) return [];
+    return [...anime.episodes].sort((a, b) => {
+      const infoA = parseEpisodeInfo(a?.title, a?.slug);
+      const infoB = parseEpisodeInfo(b?.title, b?.slug);
+      if (infoA.epInt && infoB.epInt) {
+        return infoB.epInt - infoA.epInt; // Descending: newest first
+      }
+      return 0;
+    });
+  }, [anime?.episodes]);
+
+  const filteredEpisodes = useMemo(() => {
+    return sortedEpisodes.filter((ep) =>
+      (ep?.title || '').toLowerCase().includes(episodeSearch.toLowerCase()) ||
+      (ep?.slug || '').toLowerCase().includes(episodeSearch.toLowerCase())
+    );
+  }, [sortedEpisodes, episodeSearch]);
+
+  const latestEpisode = sortedEpisodes.length > 0 ? sortedEpisodes[0] : null;
+  const earliestEpisode = sortedEpisodes.length > 0 ? sortedEpisodes[sortedEpisodes.length - 1] : null;
+  const isFav = Array.isArray(myList) && myList.some((item) => item?.slug === slug);
+
+  const handleShare = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  // CONDITIONAL RENDERING (AFTER ALL HOOKS)
   if (loading) {
     return (
       <div className="min-h-screen bg-[#121214] flex flex-col items-center justify-center pt-20 text-white/60">
@@ -97,39 +130,6 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
       </div>
     );
   }
-
-  const isFav = myList.some((item) => item.slug === slug);
-
-  const handleShare = () => {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(window.location.href);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  // Sort episodes descending by episode number: highest/newest at top
-  const sortedEpisodes = useMemo(() => {
-    if (!anime?.episodes) return [];
-    return [...anime.episodes].sort((a, b) => {
-      const infoA = parseEpisodeInfo(a.title, a.slug);
-      const infoB = parseEpisodeInfo(b.title, b.slug);
-      if (infoA.epInt && infoB.epInt) {
-        return infoB.epInt - infoA.epInt; // Descending: newest first
-      }
-      return 0;
-    });
-  }, [anime?.episodes]);
-
-  const filteredEpisodes = sortedEpisodes.filter((ep) =>
-    ep.title.toLowerCase().includes(episodeSearch.toLowerCase()) ||
-    ep.slug.toLowerCase().includes(episodeSearch.toLowerCase())
-  );
-
-  // Latest episode is the first one in sortedEpisodes
-  const latestEpisode = sortedEpisodes.length > 0 ? sortedEpisodes[0] : null;
-  // Earliest episode is the last one in sortedEpisodes
-  const earliestEpisode = sortedEpisodes.length > 0 ? sortedEpisodes[sortedEpisodes.length - 1] : null;
 
   return (
     <div className="min-h-screen bg-[#121214] text-white selection:bg-white selection:text-black">
@@ -303,16 +303,18 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
             </div>
 
             {/* Genres */}
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-1">
-              {anime.genres.map((g) => (
-                <span
-                  key={g.slug}
-                  className="px-3.5 py-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.14] border border-white/5 text-xs text-white/90 font-medium transition-colors cursor-default"
-                >
-                  {g.name}
-                </span>
-              ))}
-            </div>
+            {anime.genres && Array.isArray(anime.genres) && (
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-1">
+                {anime.genres.map((g) => (
+                  <span
+                    key={g?.slug || g?.name}
+                    className="px-3.5 py-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.14] border border-white/5 text-xs text-white/90 font-medium transition-colors cursor-default"
+                  >
+                    {g?.name}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -333,7 +335,7 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
             <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2.5">
               <span>Daftar Episode</span>
               <span className="text-sm font-normal text-white/40">
-                ({anime.episodes.length})
+                ({sortedEpisodes.length})
               </span>
             </h2>
 
@@ -403,19 +405,19 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
         </section>
 
         {/* Similar Recommendations Section from API */}
-        {anime.recommendations.length > 0 && (
+        {anime.recommendations && Array.isArray(anime.recommendations) && anime.recommendations.length > 0 && (
           <section className="mt-14 pt-8 border-t border-white/10">
             <h2 className="text-xl sm:text-2xl font-bold mb-6">Rekomendasi Serupa</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
               {anime.recommendations.map((item) => (
                 <AnimeCard
-                  key={`rec-${item.slug}`}
+                  key={`rec-${item?.slug || item?.title}`}
                   anime={{
-                    title: item.title,
-                    slug: item.slug,
-                    thumb: item.thumb
+                    title: item?.title || '',
+                    slug: item?.slug || '',
+                    thumb: item?.thumb || ''
                   }}
-                  onClick={() => navigate(`/anime/${item.slug}`)}
+                  onClick={() => navigate(`/anime/${item?.slug}`)}
                 />
               ))}
             </div>

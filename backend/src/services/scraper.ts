@@ -173,58 +173,6 @@ export async function searchAnime(query: string): Promise<AnimeItem[]> {
   return results;
 }
 
-export async function getGenreList(): Promise<Array<{ name: string; slug: string; url: string }>> {
-  const html = await fetchHtml('/genre-list/');
-  const $ = cheerio.load(html);
-  const genres: Array<{ name: string; slug: string; url: string }> = [];
-
-  $('.genres li a').each((_, el) => {
-    const $el = $(el);
-    const name = $el.text().trim();
-    const href = $el.attr('href') || '';
-    const slug = extractSlug(href, 'genres');
-    if (name && slug) {
-      genres.push({ name, slug, url: href });
-    }
-  });
-
-  return genres;
-}
-
-export async function getAnimeByGenre(
-  genreSlug: string,
-  page = 1
-): Promise<{ data: AnimeItem[]; currentPage: number; hasNextPage: boolean }> {
-  const url = page > 1 ? `/genres/${genreSlug}/page/${page}/` : `/genres/${genreSlug}/`;
-  const html = await fetchHtml(url);
-  const $ = cheerio.load(html);
-
-  const data: AnimeItem[] = [];
-  $('.col-anime').each((_, el) => {
-    const $el = $(el);
-    const title = $el.find('.col-anime-title a').text().trim();
-    const href = $el.find('.col-anime-title a').attr('href') || '';
-    const thumb = $el.find('.col-anime-cover img').attr('src') || '';
-    const total_episode = $el.find('.col-anime-eps').text().trim();
-    const rating = $el.find('.col-anime-rating').text().trim();
-    const release_date = $el.find('.col-anime-date').text().trim();
-
-    if (title && href) {
-      data.push({
-        title,
-        slug: extractSlug(href, 'anime'),
-        thumb,
-        total_episode,
-        rating,
-        release_date,
-      });
-    }
-  });
-
-  const hasNextPage = $('.pagination .next').length > 0;
-  return { data, currentPage: page, hasNextPage };
-}
-
 export async function getAnimeDetail(slug: string): Promise<AnimeDetail> {
   const html = await fetchHtml(`/anime/${slug}/`);
   const $ = cheerio.load(html);
@@ -441,6 +389,8 @@ export async function getGenres(): Promise<Genre[]> {
 
   return genres;
 }
+
+export const getGenreList = getGenres;
 
 export async function getAnimeByGenre(
   genreSlug: string,

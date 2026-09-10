@@ -17,6 +17,10 @@
       "description": "Endpoint daftar anime terbaru, ongoing, complete, dan pencarian"
     },
     {
+      "name": "Genre Anime",
+      "description": "Endpoint daftar kategori genre dan filter anime berdasarkan genre"
+    },
+    {
       "name": "Detail & Episode",
       "description": "Endpoint metadata anime lengkap dan detail episode"
     },
@@ -188,8 +192,9 @@
     },
     "/api/genres": {
       "get": {
-        "tags": ["Katalog Anime"],
-        "summary": "Daftar seluruh genre anime (https://otakudesu.blog/genre-list/)",
+        "tags": ["Genre Anime"],
+        "summary": "Ambil seluruh daftar genre anime",
+        "description": "Mengambil semua kategori genre dari halaman https://otakudesu.blog/genre-list/.",
         "responses": {
           "200": {
             "description": "Berhasil mengambil daftar genre",
@@ -199,16 +204,10 @@
                   "type": "object",
                   "properties": {
                     "success": { "type": "boolean", "example": true },
+                    "cached": { "type": "boolean", "example": false },
                     "data": {
                       "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "name": { "type": "string", "example": "Action" },
-                          "slug": { "type": "string", "example": "action" },
-                          "url": { "type": "string", "example": "/genres/action/" }
-                        }
-                      }
+                      "items": { "$ref": "#/components/schemas/Genre" }
                     }
                   }
                 }
@@ -220,14 +219,15 @@
     },
     "/api/genres/{slug}": {
       "get": {
-        "tags": ["Katalog Anime"],
+        "tags": ["Genre Anime"],
         "summary": "Ambil anime berdasarkan genre dengan pagination",
+        "description": "Mengambil daftar anime yang tergolong dalam genre tertentu dengan dukungan pagination.",
         "parameters": [
           {
             "name": "slug",
             "in": "path",
             "required": true,
-            "description": "Slug genre (contoh: action)",
+            "description": "Slug genre (contoh: action, isekai, romance)",
             "schema": { "type": "string", "example": "action" }
           },
           {
@@ -247,12 +247,13 @@
                   "type": "object",
                   "properties": {
                     "success": { "type": "boolean", "example": true },
+                    "cached": { "type": "boolean", "example": false },
                     "data": {
                       "type": "object",
                       "properties": {
                         "data": {
                           "type": "array",
-                          "items": { "$ref": "#/components/schemas/AnimeItem" }
+                          "items": { "$ref": "#/components/schemas/GenreAnimeItem" }
                         },
                         "currentPage": { "type": "integer", "example": 1 },
                         "hasNextPage": { "type": "boolean", "example": true }
@@ -441,6 +442,30 @@
           "rating": { "type": "string", "example": "6.81" },
           "release_day": { "type": "string", "example": "Kamis" },
           "release_date": { "type": "string", "example": "10 Sep" }
+        }
+      },
+      "Genre": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "example": "Action" },
+          "slug": { "type": "string", "example": "action" }
+        }
+      },
+      "GenreAnimeItem": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string", "example": "Tomb Raider King" },
+          "slug": { "type": "string", "example": "tomb-raider-king-sub-indo" },
+          "thumb": { "type": "string", "example": "https://otakudesu.blog/wp-content/uploads/2026/07/Tomb-Raider-King-Sub.jpg" },
+          "studio": { "type": "string", "example": "Studio Eek" },
+          "episodes": { "type": "string", "example": "12 Eps" },
+          "rating": { "type": "string", "example": "6.85" },
+          "genres": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Genre" }
+          },
+          "synopsis": { "type": "string", "example": "Memasuki tahun 2025, muncul makam-makam misterius..." },
+          "season": { "type": "string", "example": "Summer 2026" }
         }
       },
       "AnimeDetail": {
