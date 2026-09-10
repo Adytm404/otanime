@@ -1,0 +1,393 @@
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { fetchAnimeDetail } from '../services/otakudesuApi';
+import { AnimeDetail, AnimeItem } from '../types/anime';
+import { AnimeCard } from '../components/AnimeCard';
+import {
+  Play,
+  Heart,
+  Star,
+  Calendar,
+  Clock,
+  Film,
+  ArrowLeft,
+  Share2,
+  Tv,
+  Check,
+  Search,
+  Download,
+  Building2,
+  RefreshCw
+} from 'lucide-react';
+
+interface AnimeDetailPageProps {
+  myList: AnimeItem[];
+  onToggleFavorite: (anime: AnimeItem) => void;
+}
+
+export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
+  myList,
+  onToggleFavorite
+}) => {
+  const { id } = useParams<{ id: string }>();
+  const slug = id || '';
+  const navigate = useNavigate();
+
+  const [anime, setAnime] = useState<AnimeDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [episodeSearch, setEpisodeSearch] = useState('');
+  const [showFullSynopsis, setShowFullSynopsis] = useState(false);
+
+  const loadData = () => {
+    if (!slug) return;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setLoading(true);
+    setError(null);
+
+    fetchAnimeDetail(slug)
+      .then((data) => {
+        setAnime(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Failed fetching anime detail:', err);
+        setError(err.message || 'Gagal memuat data anime');
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#121214] flex flex-col items-center justify-center pt-20 text-white/60">
+        <div className="w-10 h-10 border-2 border-white/20 border-t-white rounded-full animate-spin mb-3" />
+        <p className="text-sm">Memuat Detail Anime dari API...</p>
+      </div>
+    );
+  }
+
+  if (error || !anime) {
+    return (
+      <div className="min-h-screen bg-[#121214] flex flex-col items-center justify-center pt-20 text-center px-4">
+        <div className="w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 mb-3">
+          <RefreshCw className="w-6 h-6" />
+        </div>
+        <h2 className="text-xl font-bold text-white mb-1">Anime Tidak Ditemukan</h2>
+        <p className="text-white/60 text-xs max-w-md mb-5">{error || `Slug "${slug}" tidak valid.`}</p>
+        <div className="flex gap-3">
+          <button
+            onClick={loadData}
+            className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all"
+          >
+            Coba Lagi
+          </button>
+          <Link
+            to="/"
+            className="px-4 py-2 rounded-full bg-white text-black text-xs font-semibold hover:bg-white/90 transition-all"
+          >
+            Kembali ke Beranda
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const isFav = myList.some((item) => item.slug === slug);
+
+  const handleShare = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  // Sort episodes: latest first or earliest first
+  const filteredEpisodes = anime.episodes.filter((ep) =>
+    ep.title.toLowerCase().includes(episodeSearch.toLowerCase()) ||
+    ep.slug.toLowerCase().includes(episodeSearch.toLowerCase())
+  );
+
+  // First episode to watch: last element or first element depending on ordering
+  const firstEpisode = anime.episodes.length > 0 ? anime.episodes[anime.episodes.length - 1] : null;
+
+  return (
+    <div className="min-h-screen bg-[#121214] text-white selection:bg-white selection:text-black">
+      {/* Hero Backdrop with Gradient Overlay */}
+      <div className="relative w-full h-[50vh] sm:h-[60vh] max-h-[580px] overflow-hidden">
+        <img
+          src={anime.poster}
+          alt={anime.title}
+          className="w-full h-full object-cover object-center scale-110 filter blur-[2px] opacity-70"
+        />
+        {/* Gradients */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#121214] via-[#121214]/75 to-black/70" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#121214] via-[#121214]/60 to-transparent" />
+
+        {/* Top Floating Back Button */}
+        <div className="absolute top-20 sm:top-24 left-4 sm:left-6 lg:left-10 z-20">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/10 text-xs sm:text-sm text-white/80 hover:text-white transition-all shadow-lg"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Kembali</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Details Card Area */}
+      <div className="max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-10 -mt-44 sm:-mt-56 relative z-30 pb-20">
+        <div className="flex flex-col md:flex-row items-center md:items-start gap-6 sm:gap-8 lg:gap-10">
+          {/* Left Column: Poster Image + Actions */}
+          <div className="flex-shrink-0 w-48 sm:w-56 md:w-64 lg:w-72 flex flex-col items-center">
+            <div className="relative w-full aspect-[2/3] rounded-2xl overflow-hidden bg-[#1a1a20] border border-white/10 shadow-2xl shadow-black/80">
+              <img
+                src={anime.poster}
+                alt={anime.title}
+                className="w-full h-full object-cover"
+              />
+              {anime.score && (
+                <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-black/75 backdrop-blur-md border border-white/10 flex items-center gap-1.5 text-xs font-bold text-amber-400 shadow">
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  <span>{anime.score}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Action buttons below poster */}
+            <div className="w-full mt-4 flex items-center gap-2.5">
+              <button
+                onClick={() =>
+                  onToggleFavorite({
+                    title: anime.title,
+                    slug: slug,
+                    thumb: anime.poster,
+                    rating: anime.score
+                  })
+                }
+                className={`flex-1 py-2.5 rounded-xl border text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
+                  isFav
+                    ? 'bg-rose-500/20 border-rose-500/40 text-rose-400'
+                    : 'bg-white/10 hover:bg-white/15 border-white/10 text-white'
+                }`}
+              >
+                <Heart className={`w-4 h-4 ${isFav ? 'fill-rose-500 text-rose-500' : ''}`} />
+                <span>{isFav ? 'Tersimpan' : 'Simpan'}</span>
+              </button>
+
+              <button
+                onClick={handleShare}
+                className="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 flex items-center justify-center text-white/80 hover:text-white transition-all relative"
+                title="Bagikan tautan"
+              >
+                {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Right Column: Title, Metadata, Synopsis & Play Button */}
+          <div className="flex-1 w-full space-y-4 sm:space-y-5 text-center md:text-left">
+            <div>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-white leading-tight">
+                {anime.title}
+              </h1>
+              {anime.japanese_title && (
+                <p className="text-xs sm:text-sm text-white/50 mt-1 font-medium">
+                  {anime.japanese_title}
+                </p>
+              )}
+            </div>
+
+            {/* Badges / Meta Info Pills */}
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 text-xs">
+              {anime.status && (
+                <span className="px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-medium">
+                  {anime.status}
+                </span>
+              )}
+              {anime.total_episode && (
+                <span className="px-3 py-1 rounded-full bg-white/10 border border-white/5 flex items-center gap-1.5 text-white/90">
+                  <Film className="w-3.5 h-3.5" />
+                  {anime.total_episode}
+                </span>
+              )}
+              {anime.duration && (
+                <span className="px-3 py-1 rounded-full bg-white/10 border border-white/5 flex items-center gap-1.5 text-white/90">
+                  <Clock className="w-3.5 h-3.5" />
+                  {anime.duration}
+                </span>
+              )}
+              {anime.release_date && (
+                <span className="px-3 py-1 rounded-full bg-white/10 border border-white/5 flex items-center gap-1.5 text-white/90">
+                  <Calendar className="w-3.5 h-3.5" />
+                  {anime.release_date}
+                </span>
+              )}
+              {anime.studio && (
+                <span className="px-3 py-1 rounded-full bg-white/10 border border-white/5 flex items-center gap-1.5 text-white/90">
+                  <Tv className="w-3.5 h-3.5" />
+                  {anime.studio}
+                </span>
+              )}
+              {anime.producer && (
+                <span className="px-3 py-1 rounded-full bg-white/10 border border-white/5 flex items-center gap-1.5 text-white/90">
+                  <Building2 className="w-3.5 h-3.5" />
+                  {anime.producer}
+                </span>
+              )}
+            </div>
+
+            {/* Watch Action Buttons */}
+            {firstEpisode && (
+              <div className="flex items-center justify-center md:justify-start gap-3 pt-1">
+                <Link
+                  to={`/anime/${slug}/${firstEpisode.slug}`}
+                  className="flex items-center gap-2 px-6 sm:px-8 py-3 rounded-full bg-white text-black font-bold text-xs sm:text-sm hover:bg-white/90 active:scale-95 transition-all shadow-lg shadow-black/40 group"
+                >
+                  <Play className="w-4 h-4 fill-black text-black transition-transform group-hover:scale-110" />
+                  <span>Mulai Nonton ({firstEpisode.title.split('Episode')[1] ? `Episode ${firstEpisode.title.split('Episode')[1].trim().split(' ')[0]}` : 'Episode 1'})</span>
+                </Link>
+              </div>
+            )}
+
+            {/* Synopsis */}
+            <div className="text-left bg-white/[0.04] p-4 sm:p-5 rounded-2xl border border-white/5">
+              <h3 className="text-xs uppercase tracking-wider text-white/50 font-bold mb-2">
+                Sinopsis
+              </h3>
+              <p
+                className={`text-xs sm:text-sm text-white/80 leading-relaxed font-normal whitespace-pre-line ${
+                  !showFullSynopsis ? 'line-clamp-4 sm:line-clamp-5' : ''
+                }`}
+              >
+                {anime.synopsis || 'Sinopsis belum tersedia untuk anime ini.'}
+              </p>
+              {anime.synopsis && anime.synopsis.length > 250 && (
+                <button
+                  onClick={() => setShowFullSynopsis(!showFullSynopsis)}
+                  className="mt-2 text-xs font-semibold text-white underline hover:text-white/80"
+                >
+                  {showFullSynopsis ? 'Sembunyikan' : 'Baca Selengkapnya'}
+                </button>
+              )}
+            </div>
+
+            {/* Genres */}
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-1">
+              {anime.genres.map((g) => (
+                <span
+                  key={g.slug}
+                  className="px-3.5 py-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.14] border border-white/5 text-xs text-white/90 font-medium transition-colors cursor-default"
+                >
+                  {g.name}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Batch Download Notice if available */}
+        {anime.batch && (
+          <div className="mt-8 p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 text-indigo-300">
+              <Download className="w-4 h-4 flex-shrink-0" />
+              <span>Tersedia paket download batch: <strong>{anime.batch.title}</strong></span>
+            </div>
+            <span className="text-white/40">{anime.batch.uploaded_at}</span>
+          </div>
+        )}
+
+        {/* Episode List Section */}
+        <section className="mt-12 sm:mt-16 pt-8 border-t border-white/10">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2.5">
+              <span>Daftar Episode</span>
+              <span className="text-sm font-normal text-white/40">
+                ({anime.episodes.length})
+              </span>
+            </h2>
+
+            {/* Search / Filter Episode */}
+            <div className="relative w-full sm:w-64">
+              <input
+                type="text"
+                placeholder="Cari episode..."
+                value={episodeSearch}
+                onChange={(e) => setEpisodeSearch(e.target.value)}
+                className="w-full bg-white/[0.08] text-white text-xs sm:text-sm pl-9 pr-4 py-2 rounded-xl border border-white/10 focus:border-white/20 outline-none placeholder-white/40"
+              />
+              <Search className="w-4 h-4 text-white/40 absolute left-3 top-2.5" />
+            </div>
+          </div>
+
+          {/* Episode Cards Grid */}
+          {filteredEpisodes.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              {filteredEpisodes.map((ep) => (
+                <Link
+                  key={`ep-${ep.slug}`}
+                  to={`/anime/${slug}/${ep.slug}`}
+                  className="group p-3 sm:p-3.5 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 hover:border-white/20 transition-all flex items-center gap-3 sm:gap-4"
+                >
+                  {/* Episode Icon Preview */}
+                  <div className="relative w-16 sm:w-20 aspect-video rounded-xl overflow-hidden bg-black/50 flex-shrink-0 flex items-center justify-center">
+                    <img
+                      src={anime.poster}
+                      alt={ep.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-60"
+                    />
+                    <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                      <div className="w-6 h-6 rounded-full bg-white text-black flex items-center justify-center shadow">
+                        <Play className="w-3 h-3 fill-black text-black ml-0.5" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Episode Meta */}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-xs sm:text-sm font-semibold text-white/90 group-hover:text-white truncate">
+                      {ep.title}
+                    </h4>
+                    {ep.uploaded_at && (
+                      <span className="text-[11px] text-white/40 mt-0.5 block">
+                        {ep.uploaded_at}
+                      </span>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-white/40 py-6">Tidak ada episode yang cocok dengan pencarian.</p>
+          )}
+        </section>
+
+        {/* Similar Recommendations Section from API */}
+        {anime.recommendations.length > 0 && (
+          <section className="mt-14 pt-8 border-t border-white/10">
+            <h2 className="text-xl sm:text-2xl font-bold mb-6">Rekomendasi Serupa</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
+              {anime.recommendations.map((item) => (
+                <AnimeCard
+                  key={`rec-${item.slug}`}
+                  anime={{
+                    title: item.title,
+                    slug: item.slug,
+                    thumb: item.thumb
+                  }}
+                  onClick={() => navigate(`/anime/${item.slug}`)}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+    </div>
+  );
+};

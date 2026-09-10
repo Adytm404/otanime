@@ -1,0 +1,499 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Otakudesu Scraper REST API",
+    "version": "1.0.0",
+    "description": "Dokumentasi API untuk scraping konten anime, episode, streaming mirror, dan link download dari Otakudesu. Dibangun menggunakan Bun, Hono, dan Cheerio."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Development Server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Katalog Anime",
+      "description": "Endpoint daftar anime terbaru, ongoing, complete, dan pencarian"
+    },
+    {
+      "name": "Detail & Episode",
+      "description": "Endpoint metadata anime lengkap dan detail episode"
+    },
+    {
+      "name": "Streaming & Resolver",
+      "description": "Endpoint bypass mirror AJAX player dan redirect link download"
+    }
+  ],
+  "paths": {
+    "/api/home": {
+      "get": {
+        "tags": ["Katalog Anime"],
+        "summary": "Ambil daftar anime terbaru (Ongoing & Complete)",
+        "description": "Mengambil update episode anime ongoing dan anime yang baru selesai rilis dari halaman utama.",
+        "responses": {
+          "200": {
+            "description": "Berhasil mengambil data beranda",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "cached": { "type": "boolean", "example": false },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "ongoing": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/AnimeItem" }
+                        },
+                        "complete": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/AnimeItem" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ongoing": {
+      "get": {
+        "tags": ["Katalog Anime"],
+        "summary": "Ambil daftar anime ongoing",
+        "description": "Mengambil daftar anime yang sedang tayang dengan dukungan pagination.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Nomor halaman (default: 1)",
+            "schema": { "type": "integer", "default": 1 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Berhasil mengambil data ongoing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "cached": { "type": "boolean", "example": false },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/AnimeItem" }
+                        },
+                        "currentPage": { "type": "integer", "example": 1 },
+                        "hasNextPage": { "type": "boolean", "example": true }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/complete": {
+      "get": {
+        "tags": ["Katalog Anime"],
+        "summary": "Ambil daftar anime complete/tamat",
+        "description": "Mengambil daftar anime yang sudah selesai tayang dengan pagination.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "Nomor halaman (default: 1)",
+            "schema": { "type": "integer", "default": 1 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Berhasil mengambil data anime tamat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "cached": { "type": "boolean", "example": false },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/AnimeItem" }
+                        },
+                        "currentPage": { "type": "integer", "example": 1 },
+                        "hasNextPage": { "type": "boolean", "example": true }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/search": {
+      "get": {
+        "tags": ["Katalog Anime"],
+        "summary": "Cari anime berdasarkan kata kunci",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Kata kunci judul anime yang dicari",
+            "schema": { "type": "string", "example": "naruto" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hasil pencarian",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "cached": { "type": "boolean", "example": false },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/AnimeItem" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parameter pencarian tidak disertakan"
+          }
+        }
+      }
+    },
+    "/api/anime/{slug}": {
+      "get": {
+        "tags": ["Detail & Episode"],
+        "summary": "Detail metadata anime dan daftar episode",
+        "description": "Mengambil detail anime: sinopsis, skor, info produksi, genres, daftar episode, dan rekomendasi.",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "Slug anime (contoh: otome-game-mob-s2-sub-indo)",
+            "schema": { "type": "string", "example": "otome-game-mob-s2-sub-indo" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Data detail anime",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "cached": { "type": "boolean", "example": false },
+                    "data": { "$ref": "#/components/schemas/AnimeDetail" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/episode/{slug}": {
+      "get": {
+        "tags": ["Detail & Episode"],
+        "summary": "Detail episode, stream embed, direct video, dan download",
+        "description": "Mengambil URL iframe embed streaming bawaan, direct MP4 URL (bila ada), daftar mirror player, dan daftar link download.",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "Slug episode (contoh: otgsmbosd-s2-episode-10-sub-indo)",
+            "schema": { "type": "string", "example": "otgsmbosd-s2-episode-10-sub-indo" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detail episode",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "cached": { "type": "boolean", "example": false },
+                    "data": { "$ref": "#/components/schemas/EpisodeDetail" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/episode/resolve-mirror": {
+      "post": {
+        "tags": ["Streaming & Resolver"],
+        "summary": "Bypass AJAX mirror player untuk mendapatkan URL embed iframe",
+        "description": "Mengirimkan token data-content mirror untuk dieksekusi via endpoint internal Otakudesu tanpa perlu browser automation.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "raw_content": {
+                    "type": "string",
+                    "description": "Base64 string data-content dari mirror list",
+                    "example": "eyJpZCI6MjA0MzM2LCJpIjowLCJxIjoiMzYwcCJ9"
+                  },
+                  "content": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "integer", "example": 204336 },
+                      "i": { "type": "integer", "example": 0 },
+                      "q": { "type": "string", "example": "360p" }
+                    }
+                  },
+                  "nonce": {
+                    "type": "string",
+                    "description": "Nonce opsional (akan otomatis di-fetch jika kosong)",
+                    "example": "5693aeed96"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Iframe embed berhasil didapatkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "raw_html": { "type": "string" },
+                        "embed_url": { "type": "string", "example": "https://filedon.co/embed/Hkvgd8PhMt" },
+                        "direct_video_url": { "type": "string", "nullable": true, "example": "https://cdn.odcloud.net/anime/video.mp4" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/episode/resolve-download": {
+      "get": {
+        "tags": ["Streaming & Resolver"],
+        "summary": "Resolusi 302 redirect link download Desustream",
+        "description": "Mengonversi link `link.desustream.com/?id=...` langsung ke URL asli hosting file (Filedon, Pixeldrain, GoFile, Acefile, Mega).",
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "description": "URL dari link.desustream.com",
+            "schema": {
+              "type": "string",
+              "example": "https://link.desustream.com/?id=d2JkL0hDRWxReWpxYUpLaDJYRFJLWXhKbFlCZU5NNEZMMzVvMWsvS282dmpGdz09"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "URL hosting asli",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "direct_url": { "type": "string", "example": "https://filedon.co/view/Hkvgd8PhMt" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AnimeItem": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string", "example": "Otome Game Sekai wa Mob ni Kibishii Sekai desu S2" },
+          "slug": { "type": "string", "example": "otome-game-mob-s2-sub-indo" },
+          "thumb": { "type": "string", "example": "https://otakudesu.blog/wp-content/uploads/2026/07/158337.jpg" },
+          "current_episode": { "type": "string", "example": "Episode 10" },
+          "total_episode": { "type": "string", "example": "12 Episode" },
+          "rating": { "type": "string", "example": "6.81" },
+          "release_day": { "type": "string", "example": "Kamis" },
+          "release_date": { "type": "string", "example": "10 Sep" }
+        }
+      },
+      "AnimeDetail": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string", "example": "Otome Game Sekai wa Mob ni Kibishii Sekai desu S2" },
+          "japanese_title": { "type": "string", "example": "乙女ゲー世界はモブに厳しい世界です2" },
+          "score": { "type": "string", "example": "6.81" },
+          "producer": { "type": "string", "example": "Kadokawa" },
+          "type": { "type": "string", "example": "TV" },
+          "status": { "type": "string", "example": "Ongoing" },
+          "total_episode": { "type": "string", "example": "12" },
+          "duration": { "type": "string", "example": "23 min. per ep." },
+          "release_date": { "type": "string", "example": "Jul 08, 2026" },
+          "studio": { "type": "string", "example": "ENGI" },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string", "example": "Fantasy" },
+                "slug": { "type": "string", "example": "fantasy" }
+              }
+            }
+          },
+          "synopsis": { "type": "string" },
+          "poster": { "type": "string" },
+          "batch": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "title": { "type": "string" },
+              "slug": { "type": "string" },
+              "uploaded_at": { "type": "string" }
+            }
+          },
+          "episodes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": { "type": "string", "example": "Otome Game Sekai wa Mob ni Kibishii Sekai desu S2 Episode 10 Subtitle Indonesia" },
+                "slug": { "type": "string", "example": "otgsmbosd-s2-episode-10-sub-indo" },
+                "uploaded_at": { "type": "string", "example": "10 September,2026" }
+              }
+            }
+          },
+          "recommendations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": { "type": "string", "example": "Nippon Sangoku" },
+                "slug": { "type": "string", "example": "nippon-sangoku-sub-indo" },
+                "thumb": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
+      "EpisodeDetail": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string", "example": "Otome Game Sekai wa Mob ni Kibishii Sekai desu S2 Episode 10 Subtitle Indonesia" },
+          "stream_url": { "type": "string", "example": "https://desustream.net/dstream/odcdn/?id=TXdX..." },
+          "direct_video_url": { "type": "string", "nullable": true, "example": "https://cdn.odcloud.net/anime/video.mp4" },
+          "previous_episode_slug": { "type": "string", "nullable": true, "example": "otgsmbosd-s2-episode-9-sub-indo" },
+          "next_episode_slug": { "type": "string", "nullable": true },
+          "anime_slug": { "type": "string", "example": "otome-game-mob-s2-sub-indo" },
+          "all_episodes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": { "type": "string", "example": "Episode 10" },
+                "slug": { "type": "string", "example": "otgsmbosd-s2-episode-10-sub-indo" }
+              }
+            }
+          },
+          "mirrors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "quality": { "type": "string", "example": "360p" },
+                "server": { "type": "string", "example": "filedon" },
+                "content": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "integer", "example": 204336 },
+                    "i": { "type": "integer", "example": 0 },
+                    "q": { "type": "string", "example": "360p" }
+                  }
+                },
+                "raw_content": { "type": "string", "example": "eyJpZCI6MjA0MzM2LCJpIjowLCJxIjoiMzYwcCJ9" }
+              }
+            }
+          },
+          "downloads": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "quality": { "type": "string", "example": "Mp4 360p" },
+                "size": { "type": "string", "example": "41.0 MB" },
+                "links": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "provider": { "type": "string", "example": "Filedon" },
+                      "url": { "type": "string", "example": "https://link.desustream.com/?id=..." }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "info": {
+            "type": "object",
+            "properties": {
+              "credit": { "type": "string", "example": "Samehadaku" },
+              "encoder": { "type": "string", "example": "Samehadaku" },
+              "duration": { "type": "string", "example": "23 min. per ep." },
+              "type": { "type": "string", "example": "TV" },
+              "genres": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
