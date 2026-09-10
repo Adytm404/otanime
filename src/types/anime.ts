@@ -7,6 +7,7 @@ export interface AnimeItem {
   rating?: string;
   release_day?: string;
   release_date?: string;
+  genres?: AnimeGenre[];
 }
 
 export interface HomeData {
@@ -23,6 +24,24 @@ export interface PagedAnimeData {
 export interface AnimeGenre {
   name: string;
   slug: string;
+}
+
+export interface GenreAnimeItem {
+  title: string;
+  slug: string;
+  thumb: string;
+  studio?: string;
+  episodes?: string;
+  rating?: string;
+  genres: AnimeGenre[];
+  synopsis?: string;
+  season?: string;
+}
+
+export interface PagedGenreAnimeData {
+  data: GenreAnimeItem[];
+  currentPage: number;
+  hasNextPage: boolean;
 }
 
 export interface EpisodeListItem {
@@ -114,4 +133,4 @@ export interface WatchHistoryItem {
   updated_at: number;
 }
 
-export type NavTab = 'home' | 'my-list' | 'movie' | 'new-season';
+export type NavTab = 'home' | 'genres' | 'my-list' | 'movie' | 'new-season';

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { HomePage } from './pages/HomePage';
+import { GenrePage } from './pages/GenrePage';
 import { AnimeDetailPage } from './pages/AnimeDetailPage';
 import { AnimeWatchPage } from './pages/AnimeWatchPage';
 import { fetchHome, searchAnime } from './services/otakudesuApi';
@@ -41,6 +42,17 @@ const AppContent: React.FC = () => {
       return [];
     }
   });
+
+  // Sync active nav tab based on URL
+  useEffect(() => {
+    if (location.pathname.startsWith('/genres')) {
+      setCurrentTab('genres');
+    } else if (location.pathname === '/') {
+      if (currentTab === 'genres') {
+        setCurrentTab('home');
+      }
+    }
+  }, [location.pathname]);
 
   // Fetch initial home data from API
   const loadHomeData = async () => {
@@ -136,8 +148,12 @@ const AppContent: React.FC = () => {
   const handleTabChange = (tab: NavTab) => {
     setCurrentTab(tab);
     setSearchQuery('');
-    if (location.pathname !== '/') {
-      navigate('/');
+    if (tab === 'genres') {
+      navigate('/genres');
+    } else {
+      if (location.pathname !== '/') {
+        navigate('/');
+      }
     }
   };
 
@@ -173,6 +189,9 @@ const AppContent: React.FC = () => {
               />
             }
           />
+
+          <Route path="/genres" element={<GenrePage />} />
+          <Route path="/genres/:genreSlug" element={<GenrePage />} />
 
           <Route
             path="/anime/:id"

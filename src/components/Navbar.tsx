@@ -33,6 +33,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const navItems: { label: string; tab: NavTab }[] = [
     { label: 'Home', tab: 'home' },
+    { label: 'Genres', tab: 'genres' },
     { label: 'My List', tab: 'my-list' },
     { label: 'Movie', tab: 'movie' },
     { label: 'New Season', tab: 'new-season' },

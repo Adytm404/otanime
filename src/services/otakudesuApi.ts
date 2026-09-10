@@ -1,6 +1,7 @@
 import {
   HomeData,
   PagedAnimeData,
+  PagedGenreAnimeData,
   AnimeItem,
   AnimeDetail,
   EpisodeDetail
@@ -45,8 +46,8 @@ export async function fetchGenreList(): Promise<Array<{ name: string; slug: stri
   return await fetchJson<Array<{ name: string; slug: string }>>('/genres');
 }
 
-export async function fetchAnimeByGenre(genreSlug: string, page: number = 1): Promise<PagedAnimeData> {
-  return await fetchJson<PagedAnimeData>(`/genres/${genreSlug}?page=${page}`);
+export async function fetchAnimeByGenre(genreSlug: string, page: number = 1): Promise<PagedGenreAnimeData> {
+  return await fetchJson<PagedGenreAnimeData>(`/genres/${genreSlug}?page=${page}`);
 }
 
 export async function fetchAnimeDetail(slug: string): Promise<AnimeDetail> {
