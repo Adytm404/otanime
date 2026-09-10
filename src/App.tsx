@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { HomePage } from './pages/HomePage';
@@ -128,14 +128,30 @@ const AppContent: React.FC = () => {
     duration?: number;
   }) => {
     setWatchHistory((prev) => {
-      const filtered = prev.filter((h) => h.anime_slug !== item.anime_slug);
+      // Remove previous entry for this specific episode
+      const filtered = prev.filter(
+        (h) => !(h.anime_slug === item.anime_slug && h.episode_slug === item.episode_slug)
+      );
       const newEntry: WatchHistoryItem = {
         ...item,
         updated_at: Date.now()
       };
-      return [newEntry, ...filtered].slice(0, 20); // Keep latest 20
+      return [newEntry, ...filtered].slice(0, 100); // Keep last 100 watched episodes
     });
   };
+
+  // Group latest episode per anime for Continue Watching on homepage
+  const continueWatchingList = useMemo(() => {
+    const seen = new Set<string>();
+    const result: WatchHistoryItem[] = [];
+    for (const h of watchHistory) {
+      if (!seen.has(h.anime_slug)) {
+        seen.add(h.anime_slug);
+        result.push(h);
+      }
+    }
+    return result;
+  }, [watchHistory]);
 
   // Debounced Search via Backend /api/search
   useEffect(() => {
@@ -196,7 +212,7 @@ const AppContent: React.FC = () => {
               <HomePage
                 ongoingList={ongoingList}
                 completeList={completeList}
-                watchHistory={watchHistory}
+                watchHistory={continueWatchingList}
                 searchQuery={searchQuery}
                 searchResults={searchResults}
                 isSearching={isSearching}
@@ -231,6 +247,7 @@ const AppContent: React.FC = () => {
             element={
               <AnimeDetailPage
                 myList={myList}
+                watchHistory={watchHistory}
                 onToggleFavorite={toggleFavorite}
               />
             }

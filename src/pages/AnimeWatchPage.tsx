@@ -619,12 +619,18 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
               <div className="space-y-2 max-h-[540px] overflow-y-auto pr-1">
                 {filteredPlaylist.map((ep) => {
                   const isActive = ep.slug === episodeSlugParam || ep.title === episode.title;
+                  // Look up watched history for this specific episode
+                  const epHistory = watchHistory.find(
+                    (h) => h.anime_slug === animeSlug && (h.episode_slug === ep.slug || h.episode_title === ep.title)
+                  );
+                  const epProgress = epHistory ? epHistory.progress : 0;
+
                   return (
                     <Link
                       key={`list-ep-${ep.slug}`}
                       ref={isActive ? activeEpRef : null}
                       to={`/anime/${animeSlug}/${ep.slug}`}
-                      className={`p-2.5 rounded-xl border transition-all flex items-center gap-3 ${
+                      className={`p-2.5 rounded-xl border transition-all flex items-center gap-3 relative group/ep ${
                         isActive
                           ? 'bg-rose-500/15 border-rose-500/50 shadow-md shadow-rose-500/10 text-white'
                           : 'bg-white/[0.03] hover:bg-white/[0.08] border-white/5 text-white/80'
@@ -644,18 +650,46 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
                             <Play className="w-3.5 h-3.5 fill-white text-white" />
                           </div>
                         ) : null}
+                        {/* Progress bar under thumbnail */}
+                        {epProgress > 0 && (
+                          <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/60 z-10 overflow-hidden">
+                            <div
+                              className="h-full bg-rose-600 rounded-r-full"
+                              style={{ width: `${epProgress}%` }}
+                            />
+                          </div>
+                        )}
                       </div>
 
                       {/* Episode Info */}
                       <div className="flex-1 min-w-0">
-                        <span
-                          className={`text-xs font-bold block ${
-                            isActive ? 'text-rose-400' : 'text-white/90'
-                          }`}
-                        >
-                          {parseEpisodeInfo(ep.title, ep.slug).epNumber}
-                        </span>
-                        <p className="text-[11px] text-white/50 truncate">
+                        <div className="flex items-center justify-between gap-2">
+                          <span
+                            className={`text-xs font-bold truncate ${
+                              isActive ? 'text-rose-400' : 'text-white/90'
+                            }`}
+                          >
+                            {parseEpisodeInfo(ep.title, ep.slug).epNumber}
+                          </span>
+
+                          {/* Progress Percentage Badge */}
+                          {epProgress > 0 ? (
+                            <span
+                              className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 ${
+                                epProgress >= 90
+                                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                  : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                              }`}
+                            >
+                              {epProgress >= 90 ? 'Selesai' : `${epProgress}%`}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-white/30 flex-shrink-0">
+                              0%
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-white/50 truncate mt-0.5">
                           {ep.title.replace(/^.*?(?:Episode|Eps\.?|Ep)\s*\d+/i, '').trim() || 'Sub Indo'}
                         </p>
                       </div>

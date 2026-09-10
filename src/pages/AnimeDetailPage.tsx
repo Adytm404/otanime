@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { fetchAnimeDetail, fetchAnimeByGenre } from '../services/otakudesuApi';
-import { AnimeDetail, AnimeItem } from '../types/anime';
+import { AnimeDetail, AnimeItem, WatchHistoryItem } from '../types/anime';
 import { AnimeCard } from '../components/AnimeCard';
 import { parseEpisodeInfo } from '../utils/formatters';
 import {
@@ -23,11 +23,13 @@ import {
 
 interface AnimeDetailPageProps {
   myList: AnimeItem[];
+  watchHistory?: WatchHistoryItem[];
   onToggleFavorite: (anime: AnimeItem) => void;
 }
 
 export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
   myList,
+  watchHistory = [],
   onToggleFavorite
 }) => {
   const { id } = useParams<{ id: string }>();
@@ -463,11 +465,16 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
                 const epInfo = parseEpisodeInfo(ep.title, ep.slug);
                 const isLatest = index === 0 && !episodeSearch;
 
+                const epHistory = watchHistory.find(
+                  (h) => h.anime_slug === slug && (h.episode_slug === ep.slug || h.episode_title === ep.title)
+                );
+                const epProgress = epHistory ? epHistory.progress : 0;
+
                 return (
                   <Link
                     key={`ep-${ep.slug}`}
                     to={`/anime/${slug}/${ep.slug}`}
-                    className="group p-3 sm:p-3.5 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 hover:border-white/20 transition-all flex items-center gap-3 sm:gap-4"
+                    className="group p-3 sm:p-3.5 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 hover:border-white/20 transition-all flex items-center gap-3 sm:gap-4 relative"
                   >
                     {/* Episode Icon Preview */}
                     <div className="relative w-16 sm:w-20 aspect-video rounded-xl overflow-hidden bg-black/50 flex-shrink-0 flex items-center justify-center">
@@ -481,17 +488,42 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
                           <Play className="w-3 h-3 fill-black text-black ml-0.5" />
                         </div>
                       </div>
+
+                      {/* Progress bar under thumbnail */}
+                      {epProgress > 0 && (
+                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/60 z-10 overflow-hidden">
+                          <div
+                            className="h-full bg-rose-600 rounded-r-full"
+                            style={{ width: `${epProgress}%` }}
+                          />
+                        </div>
+                      )}
                     </div>
 
                     {/* Episode Meta */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="px-2.5 py-0.5 rounded-lg bg-rose-600/25 border border-rose-500/40 text-rose-300 font-bold text-xs sm:text-sm">
-                          {epInfo.epNumber}
-                        </span>
-                        {isLatest && (
-                          <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-semibold">
-                            Terbaru
+                      <div className="flex items-center justify-between gap-1.5 mb-1">
+                        <div className="flex items-center gap-1.5 overflow-hidden">
+                          <span className="px-2.5 py-0.5 rounded-lg bg-rose-600/25 border border-rose-500/40 text-rose-300 font-bold text-xs sm:text-sm truncate">
+                            {epInfo.epNumber}
+                          </span>
+                          {isLatest && (
+                            <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-semibold flex-shrink-0">
+                              Terbaru
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Watched Progress Percentage */}
+                        {epProgress > 0 && (
+                          <span
+                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 ${
+                              epProgress >= 90
+                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                            }`}
+                          >
+                            {epProgress >= 90 ? 'Selesai' : `${epProgress}%`}
                           </span>
                         )}
                       </div>
