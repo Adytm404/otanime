@@ -38,8 +38,26 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
   const [buffered, setBuffered] = useState<number>(0);
-  const [volume, setVolume] = useState<number>(1);
-  const [isMuted, setIsMuted] = useState<boolean>(false);
+
+  // Persistent volume settings from localStorage
+  const [volume, setVolume] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('otanime_player_volume');
+      return saved !== null ? parseFloat(saved) : 1;
+    } catch {
+      return 1;
+    }
+  });
+
+  const [isMuted, setIsMuted] = useState<boolean>(() => {
+    try {
+      const savedMute = localStorage.getItem('otanime_player_muted');
+      return savedMute === 'true';
+    } catch {
+      return false;
+    }
+  });
+
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
   const [showControls, setShowControls] = useState<boolean>(true);
@@ -99,24 +117,29 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
     setCurrentTime(seekTime);
   };
 
+  // Persist volume & mute settings to localStorage and sync with video element
+  useEffect(() => {
+    try {
+      localStorage.setItem('otanime_player_volume', String(volume));
+      localStorage.setItem('otanime_player_muted', String(isMuted));
+    } catch (e) {
+      console.error(e);
+    }
+    if (videoRef.current) {
+      videoRef.current.volume = isMuted ? 0 : volume;
+      videoRef.current.muted = isMuted;
+    }
+  }, [volume, isMuted]);
+
   // Volume
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!videoRef.current) return;
     const newVol = parseFloat(e.target.value);
-    videoRef.current.volume = newVol;
     setVolume(newVol);
     setIsMuted(newVol === 0);
   };
 
   const toggleMute = () => {
-    if (!videoRef.current) return;
-    if (isMuted) {
-      videoRef.current.volume = volume || 1;
-      setIsMuted(false);
-    } else {
-      videoRef.current.volume = 0;
-      setIsMuted(true);
-    }
+    setIsMuted((prev) => !prev);
   };
 
   // Skip forward / backward
@@ -169,21 +192,16 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
           break;
         case 'ArrowUp':
           e.preventDefault();
-          if (videoRef.current) {
-            const nextVol = Math.min(1, volume + 0.1);
-            videoRef.current.volume = nextVol;
-            setVolume(nextVol);
-            setIsMuted(false);
-          }
+          setVolume((prev) => Math.min(1, Math.round((prev + 0.1) * 10) / 10));
+          setIsMuted(false);
           break;
         case 'ArrowDown':
           e.preventDefault();
-          if (videoRef.current) {
-            const nextVol = Math.max(0, volume - 0.1);
-            videoRef.current.volume = nextVol;
-            setVolume(nextVol);
-            setIsMuted(nextVol === 0);
-          }
+          setVolume((prev) => {
+            const nextVol = Math.max(0, Math.round((prev - 0.1) * 10) / 10);
+            if (nextVol === 0) setIsMuted(true);
+            return nextVol;
+          });
           break;
         case 'KeyM':
           e.preventDefault();
@@ -226,6 +244,8 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
     const onLoadedMetadata = () => {
       setDuration(v.duration);
       setError(null);
+      v.volume = isMuted ? 0 : volume;
+      v.muted = isMuted;
       // Resume from previous timestamp if provided
       if (initialTime && initialTime > 0 && initialTime < v.duration - 5) {
         v.currentTime = initialTime;
