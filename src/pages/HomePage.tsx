@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Hero } from '../components/Hero';
 import { GenreFilters } from '../components/GenreFilters';
@@ -44,6 +44,12 @@ export const HomePage: React.FC<HomePageProps> = ({
   const [loadingGenre, setLoadingGenre] = useState<boolean>(false);
   const [loadingGenresList, setLoadingGenresList] = useState<boolean>(false);
 
+  // Infinite Scroll State for Genre
+  const [genrePage, setGenrePage] = useState<number>(1);
+  const [hasMoreGenre, setHasMoreGenre] = useState<boolean>(true);
+  const [loadingMoreGenre, setLoadingMoreGenre] = useState<boolean>(false);
+  const observerRef = useRef<HTMLDivElement>(null);
+
   // Load genres from backend on mount
   useEffect(() => {
     setLoadingGenresList(true);
@@ -61,9 +67,12 @@ export const HomePage: React.FC<HomePageProps> = ({
       });
   }, []);
 
-  // When user picks a genre, fetch anime in that genre from backend
+  // When user picks a genre, fetch page 1 from backend
   const handleSelectGenre = async (slug: string) => {
     setSelectedGenreSlug(slug);
+    setGenrePage(1);
+    setHasMoreGenre(true);
+
     if (slug === 'all') {
       setGenreAnimeList([]);
       return;
@@ -71,15 +80,86 @@ export const HomePage: React.FC<HomePageProps> = ({
 
     setLoadingGenre(true);
     try {
-      const result = await fetchAnimeByGenre(slug);
+      const result = await fetchAnimeByGenre(slug, 1);
       setGenreAnimeList(result.data || []);
+      setHasMoreGenre(Boolean(result.hasNextPage) && (result.data?.length ?? 0) > 0);
     } catch (err) {
       console.error(`Failed to fetch anime for genre ${slug}:`, err);
       setGenreAnimeList([]);
+      setHasMoreGenre(false);
     } finally {
       setLoadingGenre(false);
     }
   };
+
+  // Load more anime for selected genre (infinite scroll)
+  const loadMoreGenreAnime = useCallback(async () => {
+    if (
+      selectedGenreSlug === 'all' ||
+      loadingGenre ||
+      loadingMoreGenre ||
+      !hasMoreGenre
+    ) {
+      return;
+    }
+
+    setLoadingMoreGenre(true);
+    const nextPage = genrePage + 1;
+
+    try {
+      const result = await fetchAnimeByGenre(selectedGenreSlug, nextPage);
+      const newItems = result.data || [];
+
+      if (newItems.length > 0) {
+        setGenreAnimeList((prev) => {
+          const existingSlugs = new Set(prev.map((item) => item.slug));
+          const uniqueNew = newItems.filter((item) => !existingSlugs.has(item.slug));
+          return [...prev, ...uniqueNew];
+        });
+        setGenrePage(nextPage);
+        setHasMoreGenre(Boolean(result.hasNextPage));
+      } else {
+        setHasMoreGenre(false);
+      }
+    } catch (err) {
+      console.error(`Failed loading more anime for genre ${selectedGenreSlug}:`, err);
+      setHasMoreGenre(false);
+    } finally {
+      setLoadingMoreGenre(false);
+    }
+  }, [selectedGenreSlug, genrePage, hasMoreGenre, loadingGenre, loadingMoreGenre]);
+
+  // IntersectionObserver for trigger infinite scroll when scrolling to bottom
+  useEffect(() => {
+    if (
+      selectedGenreSlug === 'all' ||
+      !hasMoreGenre ||
+      loadingGenre ||
+      loadingMoreGenre
+    ) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMoreGenreAnime();
+        }
+      },
+      { rootMargin: '350px' }
+    );
+
+    const currentEl = observerRef.current;
+    if (currentEl) {
+      observer.observe(currentEl);
+    }
+
+    return () => {
+      if (currentEl) {
+        observer.unobserve(currentEl);
+      }
+    };
+  }, [selectedGenreSlug, hasMoreGenre, loadingGenre, loadingMoreGenre, loadMoreGenreAnime]);
 
   // Featured Anime for Hero: Top Ongoing Anime
   const featuredAnime = ongoingList.length > 0 ? ongoingList[0] : null;
@@ -211,14 +291,14 @@ export const HomePage: React.FC<HomePageProps> = ({
               loading={loadingGenresList}
             />
 
-            {/* If a genre is selected, display anime from that genre */}
+            {/* If a genre is selected, display anime from that genre with infinite scroll */}
             {selectedGenreSlug !== 'all' ? (
               <section className="w-full my-8">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-base sm:text-lg md:text-xl font-bold tracking-tight text-white flex items-center gap-2">
                     <span>Anime Genre: {currentGenreName}</span>
                     <span className="text-xs font-normal text-white/40">
-                      ({genreAnimeList.length})
+                      ({genreAnimeList.length} anime)
                     </span>
                   </h2>
 
@@ -231,13 +311,36 @@ export const HomePage: React.FC<HomePageProps> = ({
                 </div>
 
                 {genreAnimeList.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
-                    {genreAnimeList.map((anime) => (
-                      <AnimeCard key={`genre-${anime.slug}`} anime={anime} />
-                    ))}
-                  </div>
+                  <>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
+                      {genreAnimeList.map((anime) => (
+                        <AnimeCard key={`genre-${anime.slug}`} anime={anime} />
+                      ))}
+                    </div>
+
+                    {/* Infinite Scroll Trigger Sentinel & Loading Indicator */}
+                    <div ref={observerRef} className="w-full py-8 flex flex-col items-center justify-center">
+                      {loadingMoreGenre ? (
+                        <div className="flex items-center gap-2.5 text-xs text-white/70 bg-white/5 px-4 py-2 rounded-full border border-white/10">
+                          <Loader2 className="w-4 h-4 animate-spin text-rose-500" />
+                          <span>Memuat anime berikutnya dari Otakudesu...</span>
+                        </div>
+                      ) : hasMoreGenre ? (
+                        <button
+                          onClick={loadMoreGenreAnime}
+                          className="px-5 py-2 rounded-full bg-white/10 hover:bg-white/15 text-white text-xs font-semibold border border-white/10 transition-colors"
+                        >
+                          Muat Lebih Banyak
+                        </button>
+                      ) : (
+                        <p className="text-xs text-white/30">
+                          Semua anime untuk genre {currentGenreName} telah ditampilkan
+                        </p>
+                      )}
+                    </div>
+                  </>
                 ) : !loadingGenre ? (
-                  <p className="text-xs text-white/40 py-8">
+                  <p className="text-xs text-white/40 py-8 text-center">
                     Tidak ditemukan anime untuk genre {currentGenreName}.
                   </p>
                 ) : null}
