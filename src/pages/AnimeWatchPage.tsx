@@ -8,6 +8,7 @@ import {
 } from '../services/otakudesuApi';
 import { EpisodeDetail, AnimeDetail, MirrorStream, AnimeItem } from '../types/anime';
 import { parseEpisodeInfo } from '../utils/formatters';
+import { JWVideoPlayer } from '../components/JWVideoPlayer';
 import {
   ChevronLeft,
   ChevronRight,
@@ -175,14 +176,23 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
     }
   };
 
-  // Handle download link click with 302 resolver
+  // Handle download link click with 302 resolver (opens in new tab)
   const handleDownloadClick = async (e: React.MouseEvent, url: string) => {
     e.preventDefault();
     try {
       const realUrl = await resolveDownload(url);
-      window.open(realUrl, '_blank');
+      const newTab = window.open(realUrl, '_blank', 'noopener,noreferrer');
+      if (!newTab) {
+        const a = document.createElement('a');
+        a.href = realUrl;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
     } catch {
-      window.open(url, '_blank');
+      window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -288,12 +298,15 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
                   <span className="text-xs">Menghubungkan ke Mirror...</span>
                 </div>
               ) : playerMode === 'direct' && currentDirectUrl ? (
-                <video
+                <JWVideoPlayer
                   key={currentDirectUrl}
                   src={currentDirectUrl}
-                  controls
-                  autoPlay
-                  className="w-full h-full object-contain bg-black"
+                  title={episode.title}
+                  poster={anime?.poster}
+                  onFallbackToEmbed={() => {
+                    setPlayerMode('embed');
+                    setCurrentEmbedUrl(episode.stream_url);
+                  }}
                 />
               ) : currentEmbedUrl ? (
                 <iframe
