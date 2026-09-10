@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Search, Bell, Menu, X, Sparkles, Play } from 'lucide-react';
 import { AnimeItem, NavTab } from '../types/anime';
 
@@ -50,11 +50,11 @@ export const Navbar: React.FC<NavbarProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isNotifOpen]);
 
-  const navItems: { label: string; tab: NavTab }[] = [
-    { label: 'Home', tab: 'home' },
-    { label: 'Genres', tab: 'genres' },
-    { label: 'My List', tab: 'my-list' },
-    { label: 'New Season', tab: 'new-season' },
+  const navItems: { label: string; tab: NavTab; path: string }[] = [
+    { label: 'Home', tab: 'home', path: '/' },
+    { label: 'Genres', tab: 'genres', path: '/genres' },
+    { label: 'My List', tab: 'my-list', path: '/my-list' },
+    { label: 'New Season', tab: 'new-season', path: '/new-season' },
   ];
 
   const handleNotifClick = (slug: string) => {
@@ -104,8 +104,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             {navItems.map((item) => {
               const active = currentTab === item.tab;
               return (
-                <button
+                <Link
                   key={item.tab}
+                  to={item.path}
                   onClick={() => onTabChange(item.tab)}
                   className={`relative transition-colors duration-200 ${
                     active
@@ -122,7 +123,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {active && (
                     <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-white rounded-full transition-all" />
                   )}
-                </button>
+                </Link>
               );
             })}
           </nav>
@@ -249,8 +250,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           {navItems.map((item) => {
             const active = currentTab === item.tab;
             return (
-              <button
+              <Link
                 key={item.tab}
+                to={item.path}
                 onClick={() => {
                   onTabChange(item.tab);
                   setIsMobileMenuOpen(false);
@@ -267,7 +269,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     {myListCount}
                   </span>
                 )}
-              </button>
+              </Link>
             );
           })}
         </div>

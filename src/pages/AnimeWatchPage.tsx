@@ -150,18 +150,6 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
     }
   }, [episode]);
 
-  // Guard against popups and unexpected top window redirects
-  useEffect(() => {
-    const originalOpen = window.open;
-    window.open = (...args: any[]) => {
-      console.warn('[Security] Blocked unwanted popup attempt:', args[0]);
-      return null;
-    };
-    return () => {
-      window.open = originalOpen;
-    };
-  }, []);
-
   // Find active history item for resuming playback
   const existingHistory = watchHistory.find(
     (h) => h.anime_slug === animeSlug && (h.episode_slug === episodeSlugParam || h.episode_title === episode?.title)
