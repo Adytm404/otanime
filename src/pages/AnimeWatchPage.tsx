@@ -423,7 +423,7 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
                     {episode.title}
                   </h1>
                   <p className="text-xs text-white/50 mt-0.5">
-                    {anime?.title} • {episode.info?.duration || '24m'} • {episode.info?.credit || 'Otakudesu'}
+                    {anime?.title} • {episode.info?.duration || '24m'} • {episode.info?.credit || 'Otanime'}
                   </p>
                 </div>
 

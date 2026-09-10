@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Bell, ChevronDown, Menu, X, Globe } from 'lucide-react';
+import { Search, Bell, Menu, X } from 'lucide-react';
 import { NavTab } from '../types/anime';
 
 interface NavbarProps {
@@ -20,8 +20,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isLangOpen, setIsLangOpen] = useState(false);
-  const [selectedLang, setSelectedLang] = useState<'EN' | 'ID'>('EN');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -50,11 +48,11 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-10 flex items-center justify-between gap-3 sm:gap-6">
         {/* Left: Logo & Nav items */}
         <div className="flex items-center gap-6 lg:gap-8">
-          {/* Swirl Logo */}
+          {/* Swirl Logo & Brand Name */}
           <button
             onClick={() => onTabChange('home')}
             className="flex items-center gap-2.5 group focus:outline-none"
-            aria-label="AnimeStream Home"
+            aria-label="Otanime Home"
           >
             <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/10 flex items-center justify-center p-1.5 transition-transform duration-300 group-hover:scale-105">
               <svg
@@ -66,12 +64,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                 strokeLinejoin="round"
                 className="w-full h-full text-white"
               >
-                {/* Spiral / Whirlpool icon matching the reference */}
                 <circle cx="12" cy="12" r="9" strokeOpacity="0.4" />
                 <path d="M12 3a9 9 0 0 1 9 9c0 4.5-3.5 8-8 8a6 6 0 0 1-6-6c0-3.3 2.7-5 5-5a3 3 0 0 1 3 3" />
                 <circle cx="12" cy="12" r="1.5" fill="white" />
               </svg>
             </div>
+            <span className="text-base sm:text-lg font-bold tracking-tight text-white group-hover:text-rose-400 transition-colors">
+              Otanime
+            </span>
           </button>
 
           {/* Desktop Nav Links */}
@@ -100,40 +100,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </button>
               );
             })}
-
-            {/* Language Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setIsLangOpen(!isLangOpen)}
-                className="flex items-center gap-1 text-white/70 hover:text-white text-sm transition-colors py-1 focus:outline-none"
-              >
-                <span>Language</span>
-                <ChevronDown className="w-3.5 h-3.5 opacity-70" />
-              </button>
-
-              {isLangOpen && (
-                <div className="absolute top-full left-0 mt-2 w-32 bg-[#1b1b20] border border-white/10 rounded-xl shadow-2xl py-1 z-50 text-xs">
-                  <button
-                    onClick={() => { setSelectedLang('EN'); setIsLangOpen(false); }}
-                    className={`w-full text-left px-3.5 py-2 flex items-center justify-between hover:bg-white/10 transition-colors ${
-                      selectedLang === 'EN' ? 'text-white font-semibold' : 'text-white/70'
-                    }`}
-                  >
-                    <span>English</span>
-                    {selectedLang === 'EN' && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
-                  </button>
-                  <button
-                    onClick={() => { setSelectedLang('ID'); setIsLangOpen(false); }}
-                    className={`w-full text-left px-3.5 py-2 flex items-center justify-between hover:bg-white/10 transition-colors ${
-                      selectedLang === 'ID' ? 'text-white font-semibold' : 'text-white/70'
-                    }`}
-                  >
-                    <span>Indonesia</span>
-                    {selectedLang === 'ID' && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
-                  </button>
-                </div>
-              )}
-            </div>
           </nav>
         </div>
 
@@ -160,14 +126,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="w-2 h-2 rounded-full bg-rose-500 absolute top-1.5 right-1.5 ring-2 ring-[#121214]" />
           </button>
 
-          {/* User Avatar matching screenshot */}
+          {/* User Avatar */}
           <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full ring-2 ring-white/10 overflow-hidden bg-[#24242c] flex-shrink-0 cursor-pointer hover:ring-white/30 transition-all">
             <img
               src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
               alt="User Profile"
               className="w-full h-full object-cover"
               onError={(e) => {
-                // Fallback cute anime avatar SVG
                 (e.target as HTMLElement).style.display = 'none';
               }}
             />
@@ -211,30 +176,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             );
           })}
-
-          <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs text-white/60">
-            <span className="flex items-center gap-1.5">
-              <Globe className="w-3.5 h-3.5" /> Language
-            </span>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setSelectedLang('EN')}
-                className={`px-2.5 py-1 rounded-md ${
-                  selectedLang === 'EN' ? 'bg-white text-black font-bold' : 'bg-white/10 text-white'
-                }`}
-              >
-                EN
-              </button>
-              <button
-                onClick={() => setSelectedLang('ID')}
-                className={`px-2.5 py-1 rounded-md ${
-                  selectedLang === 'ID' ? 'bg-white text-black font-bold' : 'bg-white/10 text-white'
-                }`}
-              >
-                ID
-              </button>
-            </div>
-          </div>
         </div>
       )}
     </header>

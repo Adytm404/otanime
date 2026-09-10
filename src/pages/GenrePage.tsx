@@ -8,7 +8,6 @@ import {
   Check,
   X,
   Loader2,
-  Sparkles,
   Search,
   SlidersHorizontal,
   Layers
@@ -201,15 +200,11 @@ export const GenrePage: React.FC = () => {
         {/* Page Header */}
         <div className="mb-6 sm:mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold mb-2">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Katalog Genre Otakudesu</span>
-            </div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-white flex items-center gap-3">
               <Layers className="w-7 h-7 sm:w-8 sm:h-8 text-rose-500" />
               <span>Daftar Genre Anime</span>
             </h1>
-            <p className="text-xs sm:text-sm text-white/50 mt-1">
+            <p className="text-xs sm:text-sm text-white/50 mt-1.5">
               Pilih satu atau beberapa genre sekaligus. Hanya anime yang memiliki <strong>seluruh genre terpilih</strong> yang akan ditampilkan.
             </p>
           </div>
@@ -260,7 +255,7 @@ export const GenrePage: React.FC = () => {
           {loadingGenres ? (
             <div className="py-8 flex items-center justify-center gap-2 text-xs text-white/50">
               <Loader2 className="w-4 h-4 animate-spin text-rose-500" />
-              <span>Mengambil daftar genre dari Otakudesu...</span>
+              <span>Mengambil daftar genre...</span>
             </div>
           ) : (
             <div className="flex flex-wrap gap-2 max-h-56 overflow-y-auto pr-1">
@@ -398,7 +393,7 @@ export const GenrePage: React.FC = () => {
               {loadingMore ? (
                 <div className="flex items-center gap-2.5 text-xs text-white/70 bg-white/5 px-4 py-2 rounded-full border border-white/10">
                   <Loader2 className="w-4 h-4 animate-spin text-rose-500" />
-                  <span>Memuat anime berikutnya dari Otakudesu...</span>
+                  <span>Memuat anime berikutnya...</span>
                 </div>
               ) : hasNextPage && filteredAnimeList.length > 0 ? (
                 <button

@@ -197,7 +197,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             {isSearching && (
               <div className="flex items-center gap-2 text-xs text-white/60">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Mencari di database Otakudesu...</span>
+                <span>Mencari di database Otanime...</span>
               </div>
             )}
           </div>
@@ -323,7 +323,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                       {loadingMoreGenre ? (
                         <div className="flex items-center gap-2.5 text-xs text-white/70 bg-white/5 px-4 py-2 rounded-full border border-white/10">
                           <Loader2 className="w-4 h-4 animate-spin text-rose-500" />
-                          <span>Memuat anime berikutnya dari Otakudesu...</span>
+                          <span>Memuat anime berikutnya...</span>
                         </div>
                       ) : hasMoreGenre ? (
                         <button

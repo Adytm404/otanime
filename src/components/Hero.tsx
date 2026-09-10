@@ -38,7 +38,7 @@ export const Hero: React.FC<HeroProps> = ({
   const imageSrc = anime.thumb;
   const displaySynopsis =
     synopsis ||
-    `Nonton streaming dan download anime ${anime.title} subtitle Indonesia kualitas HD 1080p, 720p, 480p di Otakudesu.`;
+    `Nonton streaming dan download anime ${anime.title} subtitle Indonesia kualitas HD 1080p, 720p, 480p di Otanime.`;
 
   return (
     <section className="relative w-full h-[70vh] sm:h-[78vh] md:h-[84vh] lg:h-[88vh] min-h-[520px] max-h-[920px] flex items-center overflow-hidden">

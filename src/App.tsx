@@ -219,7 +219,7 @@ const AppContent: React.FC = () => {
       {/* Footer */}
       <footer className="w-full border-t border-white/5 py-8 bg-[#0e0e10] text-center text-xs text-white/40">
         <div className="max-w-[1520px] mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© 2026 Otakudesu Stream • Powered by Otakudesu REST API (Hono & Bun)</p>
+          <p>© 2026 Otanime • Data provided by Otakudesu</p>
           <div className="flex items-center gap-6">
             <span className="hover:text-white cursor-pointer transition-colors">Documentation</span>
             <span className="hover:text-white cursor-pointer transition-colors">API Spec</span>
