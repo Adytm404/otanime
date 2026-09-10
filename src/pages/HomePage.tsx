@@ -6,7 +6,7 @@ import { AnimeSection } from '../components/AnimeSection';
 import { AnimeCard } from '../components/AnimeCard';
 import { fetchGenreList, fetchAnimeByGenre } from '../services/otakudesuApi';
 import { AnimeItem, WatchHistoryItem, NavTab } from '../types/anime';
-import { Search, Film, Bookmark, Sparkles, Loader2, RefreshCw } from 'lucide-react';
+import { Search, Bookmark, Sparkles, Loader2, RefreshCw } from 'lucide-react';
 
 interface HomePageProps {
   currentTab: NavTab;
@@ -237,19 +237,6 @@ export const HomePage: React.FC<HomePageProps> = ({
               </p>
             </div>
           )}
-        </div>
-      ) : currentTab === 'movie' ? (
-        /* Complete / Movie Tab */
-        <div className="max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-10 pt-24 sm:pt-28 pb-16">
-          <h2 className="text-xl sm:text-2xl font-bold mb-6 flex items-center gap-2.5">
-            <Film className="w-5 h-5 text-indigo-400" />
-            <span>Anime Tamat (Complete)</span>
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
-            {completeList.map((anime) => (
-              <AnimeCard key={`complete-${anime.slug}`} anime={anime} />
-            ))}
-          </div>
         </div>
       ) : currentTab === 'new-season' ? (
         /* Ongoing / New Season Tab */

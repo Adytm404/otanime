@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Bell, Menu, X } from 'lucide-react';
-import { NavTab } from '../types/anime';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Bell, Menu, X, Sparkles, Play } from 'lucide-react';
+import { AnimeItem, NavTab } from '../types/anime';
 
 interface NavbarProps {
   currentTab: NavTab;
   onTabChange: (tab: NavTab) => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
-  onOpenSearch?: () => void;
   myListCount: number;
+  latestReleases?: AnimeItem[];
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -16,10 +17,17 @@ export const Navbar: React.FC<NavbarProps> = ({
   onTabChange,
   searchQuery,
   onSearchChange,
-  myListCount
+  myListCount,
+  latestReleases = []
 }) => {
+  const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  // Take maximum 5 new anime releases
+  const recentAnime = latestReleases.slice(0, 5);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -29,13 +37,30 @@ export const Navbar: React.FC<NavbarProps> = ({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Close notifications on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setIsNotifOpen(false);
+      }
+    };
+    if (isNotifOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isNotifOpen]);
+
   const navItems: { label: string; tab: NavTab }[] = [
     { label: 'Home', tab: 'home' },
     { label: 'Genres', tab: 'genres' },
     { label: 'My List', tab: 'my-list' },
-    { label: 'Movie', tab: 'movie' },
     { label: 'New Season', tab: 'new-season' },
   ];
+
+  const handleNotifClick = (slug: string) => {
+    setIsNotifOpen(false);
+    navigate(`/anime/${slug}`);
+  };
 
   return (
     <header
@@ -103,7 +128,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </nav>
         </div>
 
-        {/* Right: Search, Notification, Profile */}
+        {/* Right: Search & Notifications */}
         <div className="flex items-center gap-3 sm:gap-4">
           {/* Search Pill Input */}
           <div className="relative flex items-center">
@@ -117,25 +142,94 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Search className="w-4 h-4 text-white/50 absolute right-3 pointer-events-none" />
           </div>
 
-          {/* Notification Button */}
-          <button
-            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/[0.08] hover:bg-white/[0.16] border border-white/5 flex items-center justify-center text-white/80 hover:text-white transition-all duration-200 relative focus:outline-none"
-            aria-label="Notifications"
-          >
-            <Bell className="w-4 h-4" />
-            <span className="w-2 h-2 rounded-full bg-rose-500 absolute top-1.5 right-1.5 ring-2 ring-[#121214]" />
-          </button>
+          {/* Notification Button & Dropdown */}
+          <div className="relative" ref={notifRef}>
+            <button
+              onClick={() => setIsNotifOpen(!isNotifOpen)}
+              className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full border flex items-center justify-center transition-all duration-200 relative focus:outline-none ${
+                isNotifOpen
+                  ? 'bg-rose-600 text-white border-rose-500'
+                  : 'bg-white/[0.08] hover:bg-white/[0.16] border-white/5 text-white/80 hover:text-white'
+              }`}
+              aria-label="Notifications"
+            >
+              <Bell className="w-4 h-4" />
+              {recentAnime.length > 0 && (
+                <span className="w-2 h-2 rounded-full bg-rose-500 absolute top-1.5 right-1.5 ring-2 ring-[#121214]" />
+              )}
+            </button>
 
-          {/* User Avatar */}
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full ring-2 ring-white/10 overflow-hidden bg-[#24242c] flex-shrink-0 cursor-pointer hover:ring-white/30 transition-all">
-            <img
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
-              alt="User Profile"
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.target as HTMLElement).style.display = 'none';
-              }}
-            />
+            {/* Notification Dropdown Panel */}
+            {isNotifOpen && (
+              <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-[#18181f] border border-white/10 rounded-2xl shadow-2xl shadow-black/80 overflow-hidden z-50 text-white animate-in fade-in zoom-in-95 duration-200">
+                <div className="p-3.5 border-b border-white/10 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-rose-400" />
+                    <span className="font-bold text-xs sm:text-sm">Anime Rilis Terbaru</span>
+                  </div>
+                  <span className="text-[11px] text-rose-400 font-semibold bg-rose-500/15 px-2 py-0.5 rounded-full">
+                    {recentAnime.length} Episode Baru
+                  </span>
+                </div>
+
+                <div className="max-h-80 overflow-y-auto divide-y divide-white/5">
+                  {recentAnime.length > 0 ? (
+                    recentAnime.map((anime) => (
+                      <div
+                        key={`notif-${anime.slug}`}
+                        onClick={() => handleNotifClick(anime.slug)}
+                        className="p-3 hover:bg-white/[0.06] transition-colors cursor-pointer flex items-center gap-3 group"
+                      >
+                        {/* Thumbnail */}
+                        <div className="relative w-12 aspect-[2/3] rounded-lg overflow-hidden bg-black/50 flex-shrink-0">
+                          <img
+                            src={anime.thumb}
+                            alt={anime.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          />
+                          <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 flex items-center justify-center">
+                            <Play className="w-3 h-3 fill-white text-white" />
+                          </div>
+                        </div>
+
+                        {/* Text info */}
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-xs font-semibold text-white/90 group-hover:text-white truncate">
+                            {anime.title}
+                          </h4>
+                          <p className="text-[11px] text-rose-400 font-medium mt-0.5">
+                            {anime.current_episode || 'Episode Baru'}
+                          </p>
+                          {anime.release_day && (
+                            <span className="text-[10px] text-white/40 block mt-0.5">
+                              Rilis: {anime.release_day} {anime.release_date ? `• ${anime.release_date}` : ''}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="py-8 text-center text-xs text-white/40">
+                      Belum ada episode anime terbaru saat ini.
+                    </div>
+                  )}
+                </div>
+
+                {recentAnime.length > 0 && (
+                  <div className="p-2.5 bg-black/30 border-t border-white/5 text-center">
+                    <button
+                      onClick={() => {
+                        setIsNotifOpen(false);
+                        onTabChange('new-season');
+                      }}
+                      className="text-xs text-white/60 hover:text-white font-medium transition-colors"
+                    >
+                      Lihat Semua Anime Ongoing →
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Mobile Menu Button */}

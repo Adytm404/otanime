@@ -7,6 +7,7 @@ import { AnimeDetailPage } from './pages/AnimeDetailPage';
 import { AnimeWatchPage } from './pages/AnimeWatchPage';
 import { fetchHome, searchAnime } from './services/otakudesuApi';
 import { AnimeItem, WatchHistoryItem, NavTab } from './types/anime';
+import { ExternalLink, Activity, X, CheckCircle2, Server } from 'lucide-react';
 
 const AppContent: React.FC = () => {
   const navigate = useNavigate();
@@ -22,6 +23,7 @@ const AppContent: React.FC = () => {
   const [completeList, setCompleteList] = useState<AnimeItem[]>([]);
   const [apiLoading, setApiLoading] = useState<boolean>(true);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [showStatusModal, setShowStatusModal] = useState<boolean>(false);
 
   // My List (Local Storage Persistence)
   const [myList, setMyList] = useState<AnimeItem[]>(() => {
@@ -166,6 +168,7 @@ const AppContent: React.FC = () => {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         myListCount={myList.length}
+        latestReleases={ongoingList}
       />
 
       {/* Main Content Body with Routes */}
@@ -220,13 +223,107 @@ const AppContent: React.FC = () => {
       <footer className="w-full border-t border-white/5 py-8 bg-[#0e0e10] text-center text-xs text-white/40">
         <div className="max-w-[1520px] mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p>© 2026 Otanime • Data provided by Otakudesu</p>
-          <div className="flex items-center gap-6">
-            <span className="hover:text-white cursor-pointer transition-colors">Documentation</span>
-            <span className="hover:text-white cursor-pointer transition-colors">API Spec</span>
-            <span className="hover:text-white cursor-pointer transition-colors">Server Status</span>
+          <div className="flex items-center gap-5">
+            <a
+              href="/docs"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-white transition-colors flex items-center gap-1 group"
+            >
+              <span>Documentation</span>
+              <ExternalLink className="w-3 h-3 opacity-60 group-hover:opacity-100" />
+            </a>
+            <a
+              href="/openapi.json"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-white transition-colors flex items-center gap-1 group"
+            >
+              <span>API Spec</span>
+              <ExternalLink className="w-3 h-3 opacity-60 group-hover:opacity-100" />
+            </a>
+            <button
+              onClick={() => setShowStatusModal(true)}
+              className="hover:text-white transition-colors flex items-center gap-1 focus:outline-none"
+            >
+              <Activity className="w-3 h-3 text-emerald-400" />
+              <span>Server Status</span>
+            </button>
           </div>
         </div>
       </footer>
+
+      {/* Server Status Modal */}
+      {showStatusModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="fixed inset-0" onClick={() => setShowStatusModal(false)} />
+          <div className="relative w-full max-w-md bg-[#17171d] border border-white/10 rounded-2xl p-6 text-white z-10 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2 font-bold text-sm">
+                <Server className="w-4 h-4 text-emerald-400" />
+                <span>Status Server Otanime</span>
+              </div>
+              <button
+                onClick={() => setShowStatusModal(false)}
+                className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2.5 text-xs">
+              <div className="p-3 rounded-xl bg-white/[0.04] border border-white/5 flex items-center justify-between">
+                <span className="text-white/60">API Backend</span>
+                <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-400">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Online (Hono & Bun)
+                </span>
+              </div>
+              <div className="p-3 rounded-xl bg-white/[0.04] border border-white/5 flex items-center justify-between">
+                <span className="text-white/60">Scraper Engine</span>
+                <span className="font-semibold text-white/90">Cheerio / Otakudesu Core</span>
+              </div>
+              <div className="p-3 rounded-xl bg-white/[0.04] border border-white/5 flex items-center justify-between">
+                <span className="text-white/60">Katalog Tersedia</span>
+                <span className="font-semibold text-white/90">
+                  {ongoingList.length} Ongoing • {completeList.length} Complete
+                </span>
+              </div>
+              <div className="p-3 rounded-xl bg-white/[0.04] border border-white/5 flex items-center justify-between">
+                <span className="text-white/60">OpenAPI Spec</span>
+                <a
+                  href="/openapi.json"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-rose-400 hover:underline font-medium"
+                >
+                  /openapi.json
+                </a>
+              </div>
+              <div className="p-3 rounded-xl bg-white/[0.04] border border-white/5 flex items-center justify-between">
+                <span className="text-white/60">Interactive Docs</span>
+                <a
+                  href="/docs"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-rose-400 hover:underline font-medium"
+                >
+                  /docs (Redocly)
+                </a>
+              </div>
+            </div>
+
+            <div className="pt-2 text-center">
+              <button
+                onClick={() => setShowStatusModal(false)}
+                className="w-full py-2.5 rounded-xl bg-white text-black font-semibold text-xs hover:bg-white/90 transition-all"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { fetchAnimeDetail } from '../services/otakudesuApi';
+import { fetchAnimeDetail, fetchAnimeByGenre } from '../services/otakudesuApi';
 import { AnimeDetail, AnimeItem } from '../types/anime';
 import { AnimeCard } from '../components/AnimeCard';
 import { parseEpisodeInfo } from '../utils/formatters';
@@ -40,6 +40,8 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
   const [copied, setCopied] = useState(false);
   const [episodeSearch, setEpisodeSearch] = useState('');
   const [showFullSynopsis, setShowFullSynopsis] = useState(false);
+  const [similarAnime, setSimilarAnime] = useState<AnimeItem[]>([]);
+  const [loadingSimilar, setLoadingSimilar] = useState<boolean>(false);
 
   const loadData = () => {
     if (!slug) return;
@@ -94,6 +96,108 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
       setTimeout(() => setCopied(false), 2000);
     }
   };
+
+  // Fetch and calculate recommendations sharing at least 3 genres (default 6 items)
+  useEffect(() => {
+    if (!anime?.genres || anime.genres.length === 0) {
+      setSimilarAnime([]);
+      return;
+    }
+
+    let isMounted = true;
+    setLoadingSimilar(true);
+
+    const loadGenreRecommendations = async () => {
+      try {
+        const currentGenreSet = new Set(anime.genres.map((g) => g.slug.toLowerCase()));
+        const targetGenres = anime.genres.slice(0, 4);
+
+        const fetchPromises = targetGenres.map((g) =>
+          fetchAnimeByGenre(g.slug, 1).catch(() => ({ data: [] }))
+        );
+        const results = await Promise.all(fetchPromises);
+
+        const candidateMap = new Map<string, { anime: AnimeItem; matchCount: number }>();
+
+        for (const res of results) {
+          const list = res.data || [];
+          for (const item of list) {
+            if (item.slug === slug) continue;
+
+            const itemGenreSlugs = (item.genres || []).map((g) => g.slug.toLowerCase());
+            const matchCount = itemGenreSlugs.filter((s) => currentGenreSet.has(s)).length;
+
+            if (!candidateMap.has(item.slug)) {
+              candidateMap.set(item.slug, {
+                anime: {
+                  title: item.title,
+                  slug: item.slug,
+                  thumb: item.thumb,
+                  rating: item.rating,
+                  total_episode: item.episodes,
+                  badge: matchCount >= 3 ? `${matchCount} Genre Serupa` : undefined
+                },
+                matchCount
+              });
+            }
+          }
+        }
+
+        const allCandidates = Array.from(candidateMap.values());
+
+        // Prioritize strictly >= 3 matching genres
+        const strictMatches = allCandidates
+          .filter((c) => c.matchCount >= 3)
+          .sort((a, b) => b.matchCount - a.matchCount);
+
+        let finalRecs: AnimeItem[] = [];
+
+        if (strictMatches.length >= 6) {
+          finalRecs = strictMatches.slice(0, 6).map((c) => c.anime);
+        } else {
+          // If less than 6 with >= 3 genres, backfill with 2 matching genres or defaults
+          const relaxedMatches = allCandidates
+            .filter((c) => c.matchCount === 2)
+            .map((c) => c.anime);
+
+          finalRecs = [
+            ...strictMatches.map((c) => c.anime),
+            ...relaxedMatches
+          ];
+
+          if (finalRecs.length < 6 && anime.recommendations) {
+            const existingSlugs = new Set(finalRecs.map((r) => r.slug));
+            for (const rec of anime.recommendations) {
+              if (rec.slug !== slug && !existingSlugs.has(rec.slug)) {
+                finalRecs.push({
+                  title: rec.title,
+                  slug: rec.slug,
+                  thumb: rec.thumb
+                });
+                if (finalRecs.length >= 6) break;
+              }
+            }
+          }
+
+          finalRecs = finalRecs.slice(0, 6);
+        }
+
+        if (isMounted) {
+          setSimilarAnime(finalRecs);
+        }
+      } catch (err) {
+        console.error('Failed calculating genre recommendations:', err);
+      } finally {
+        if (isMounted) setLoadingSimilar(false);
+      }
+    };
+
+    loadGenreRecommendations();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [anime?.title, anime?.genres, slug]);
 
   // CONDITIONAL RENDERING (AFTER ALL HOOKS)
   if (loading) {
@@ -404,20 +508,38 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
           )}
         </section>
 
-        {/* Similar Recommendations Section from API */}
-        {anime.recommendations && Array.isArray(anime.recommendations) && anime.recommendations.length > 0 && (
+        {/* Similar Recommendations Section (sharing at least 3 genres, default 6 items) */}
+        {(similarAnime.length > 0 || (anime.recommendations && anime.recommendations.length > 0)) && (
           <section className="mt-14 pt-8 border-t border-white/10">
-            <h2 className="text-xl sm:text-2xl font-bold mb-6">Rekomendasi Serupa</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2.5">
+                <span>Rekomendasi Serupa</span>
+                <span className="text-xs font-normal text-white/40">
+                  (Minimal 3 Genre Serupa • 6 Pilihan)
+                </span>
+              </h2>
+              {loadingSimilar && (
+                <div className="flex items-center gap-2 text-xs text-white/50">
+                  <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Mencocokkan genre...</span>
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
-              {anime.recommendations.map((item) => (
+              {(similarAnime.length > 0
+                ? similarAnime
+                : (anime.recommendations || []).slice(0, 6).map((r): AnimeItem => ({
+                    title: r.title,
+                    slug: r.slug,
+                    thumb: r.thumb,
+                  }))
+              ).map((item) => (
                 <AnimeCard
-                  key={`rec-${item?.slug || item?.title}`}
-                  anime={{
-                    title: item?.title || '',
-                    slug: item?.slug || '',
-                    thumb: item?.thumb || ''
-                  }}
-                  onClick={() => navigate(`/anime/${item?.slug}`)}
+                  key={`rec-${item.slug}`}
+                  anime={item}
+                  badgeText={item.badge}
+                  onClick={() => navigate(`/anime/${item.slug}`)}
                 />
               ))}
             </div>

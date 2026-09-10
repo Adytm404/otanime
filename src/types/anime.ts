@@ -8,6 +8,7 @@ export interface AnimeItem {
   release_day?: string;
   release_date?: string;
   genres?: AnimeGenre[];
+  badge?: string;
 }
 
 export interface HomeData {
@@ -133,4 +134,4 @@ export interface WatchHistoryItem {
   updated_at: number;
 }
 
-export type NavTab = 'home' | 'genres' | 'my-list' | 'movie' | 'new-season';
+export type NavTab = 'home' | 'genres' | 'my-list' | 'new-season';

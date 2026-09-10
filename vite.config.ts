@@ -13,6 +13,14 @@ export default defineConfig({
         target: 'http://localhost:3000',
         changeOrigin: true,
       },
+      '/docs': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/openapi.json': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
     },
   },
   preview: {
@@ -21,6 +29,14 @@ export default defineConfig({
     allowedHosts: true,
     proxy: {
       '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/docs': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/openapi.json': {
         target: 'http://localhost:3000',
         changeOrigin: true,
       },
