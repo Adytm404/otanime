@@ -5,15 +5,13 @@ import { GenreFilters } from '../components/GenreFilters';
 import { AnimeSection } from '../components/AnimeSection';
 import { AnimeCard } from '../components/AnimeCard';
 import { fetchGenreList, fetchAnimeByGenre } from '../services/otakudesuApi';
-import { AnimeItem, WatchHistoryItem, NavTab } from '../types/anime';
-import { Search, Bookmark, Sparkles, Loader2, RefreshCw } from 'lucide-react';
+import { AnimeItem, WatchHistoryItem } from '../types/anime';
+import { Search, Loader2, RefreshCw } from 'lucide-react';
 
 interface HomePageProps {
-  currentTab: NavTab;
   ongoingList: AnimeItem[];
   completeList: AnimeItem[];
   watchHistory: WatchHistoryItem[];
-  myList: AnimeItem[];
   searchQuery: string;
   searchResults: AnimeItem[];
   isSearching: boolean;
@@ -23,11 +21,9 @@ interface HomePageProps {
 }
 
 export const HomePage: React.FC<HomePageProps> = ({
-  currentTab,
   ongoingList,
   completeList,
   watchHistory,
-  myList,
   searchQuery,
   searchResults,
   isSearching,
@@ -214,42 +210,6 @@ export const HomePage: React.FC<HomePageProps> = ({
               <p className="text-xs text-white/30">Coba gunakan judul alternatif atau bahasa Jepang</p>
             </div>
           ) : null}
-        </div>
-      ) : currentTab === 'my-list' ? (
-        /* My List Tab */
-        <div className="max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-10 pt-24 sm:pt-28 pb-16">
-          <h2 className="text-xl sm:text-2xl font-bold mb-6 flex items-center gap-2.5">
-            <Bookmark className="w-5 h-5 text-rose-500" />
-            <span>Anime Tersimpan</span>
-          </h2>
-
-          {myList.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
-              {myList.map((anime) => (
-                <AnimeCard key={`fav-${anime.slug}`} anime={anime} />
-              ))}
-            </div>
-          ) : (
-            <div className="py-24 text-center text-white/40 space-y-3">
-              <p className="text-base sm:text-lg">Daftar simpanan Anda masih kosong</p>
-              <p className="text-xs text-white/30">
-                Klik 'Simpan' pada halaman detail anime untuk menambahkannya ke sini.
-              </p>
-            </div>
-          )}
-        </div>
-      ) : currentTab === 'new-season' ? (
-        /* Ongoing / New Season Tab */
-        <div className="max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-10 pt-24 sm:pt-28 pb-16">
-          <h2 className="text-xl sm:text-2xl font-bold mb-6 flex items-center gap-2.5">
-            <Sparkles className="w-5 h-5 text-amber-400" />
-            <span>Anime Sedang Tayang (Ongoing)</span>
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
-            {ongoingList.map((anime) => (
-              <AnimeCard key={`season-${anime.slug}`} anime={anime} />
-            ))}
-          </div>
         </div>
       ) : (
         /* Default Home View */

@@ -139,6 +139,18 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
     }
   }, [episode]);
 
+  // Guard against popups and unexpected top window redirects
+  useEffect(() => {
+    const originalOpen = window.open;
+    window.open = (...args: any[]) => {
+      console.warn('[Security] Blocked unwanted popup attempt:', args[0]);
+      return null;
+    };
+    return () => {
+      window.open = originalOpen;
+    };
+  }, []);
+
   // Handle switching mirror server
   const handleSelectMirror = async (mirror: MirrorStream) => {
     setActiveMirror(mirror);
@@ -289,6 +301,7 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
                   src={currentEmbedUrl}
                   title={episode.title}
                   className="w-full h-full border-0"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />

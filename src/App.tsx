@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-ro
 import { Navbar } from './components/Navbar';
 import { HomePage } from './pages/HomePage';
 import { GenrePage } from './pages/GenrePage';
+import { MyListPage } from './pages/MyListPage';
+import { NewSeasonPage } from './pages/NewSeasonPage';
 import { AnimeDetailPage } from './pages/AnimeDetailPage';
 import { AnimeWatchPage } from './pages/AnimeWatchPage';
 import { fetchHome, searchAnime } from './services/otakudesuApi';
@@ -49,10 +51,12 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     if (location.pathname.startsWith('/genres')) {
       setCurrentTab('genres');
+    } else if (location.pathname.startsWith('/my-list')) {
+      setCurrentTab('my-list');
+    } else if (location.pathname.startsWith('/new-season')) {
+      setCurrentTab('new-season');
     } else if (location.pathname === '/') {
-      if (currentTab === 'genres') {
-        setCurrentTab('home');
-      }
+      setCurrentTab('home');
     }
   }, [location.pathname]);
 
@@ -105,6 +109,14 @@ const AppContent: React.FC = () => {
     });
   };
 
+  const removeFavorite = (slug: string) => {
+    setMyList((prev) => prev.filter((a) => a.slug !== slug));
+  };
+
+  const clearFavorites = () => {
+    setMyList([]);
+  };
+
   const handleSaveHistory = (item: {
     anime_slug: string;
     anime_title: string;
@@ -150,12 +162,14 @@ const AppContent: React.FC = () => {
   const handleTabChange = (tab: NavTab) => {
     setCurrentTab(tab);
     setSearchQuery('');
-    if (tab === 'genres') {
+    if (tab === 'home') {
+      navigate('/');
+    } else if (tab === 'genres') {
       navigate('/genres');
-    } else {
-      if (location.pathname !== '/') {
-        navigate('/');
-      }
+    } else if (tab === 'my-list') {
+      navigate('/my-list');
+    } else if (tab === 'new-season') {
+      navigate('/new-season');
     }
   };
 
@@ -178,11 +192,9 @@ const AppContent: React.FC = () => {
             path="/"
             element={
               <HomePage
-                currentTab={currentTab}
                 ongoingList={ongoingList}
                 completeList={completeList}
                 watchHistory={watchHistory}
-                myList={myList}
                 searchQuery={searchQuery}
                 searchResults={searchResults}
                 isSearching={isSearching}
@@ -195,6 +207,22 @@ const AppContent: React.FC = () => {
 
           <Route path="/genres" element={<GenrePage />} />
           <Route path="/genres/:genreSlug" element={<GenrePage />} />
+
+          <Route
+            path="/my-list"
+            element={
+              <MyListPage
+                myList={myList}
+                onRemoveItem={removeFavorite}
+                onClearList={clearFavorites}
+              />
+            }
+          />
+
+          <Route
+            path="/new-season"
+            element={<NewSeasonPage initialList={ongoingList} />}
+          />
 
           <Route
             path="/anime/:id"
