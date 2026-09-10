@@ -1,24 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Hero } from '../components/Hero';
 import { GenreFilters } from '../components/GenreFilters';
 import { AnimeSection } from '../components/AnimeSection';
 import { AnimeCard } from '../components/AnimeCard';
+import { fetchGenreList, fetchAnimeByGenre } from '../services/otakudesuApi';
 import { AnimeItem, WatchHistoryItem, NavTab } from '../types/anime';
 import { Search, Film, Bookmark, Sparkles, Loader2, RefreshCw } from 'lucide-react';
-
-const GENRE_LIST = [
-  'Semua',
-  'Action',
-  'Fantasy',
-  'Comedy',
-  'Isekai',
-  'Romance',
-  'School',
-  'Adventure',
-  'Sci-Fi',
-  'Slice of Life'
-];
 
 interface HomePageProps {
   currentTab: NavTab;
@@ -48,27 +36,55 @@ export const HomePage: React.FC<HomePageProps> = ({
   onRefresh
 }) => {
   const navigate = useNavigate();
-  const [selectedGenre, setSelectedGenre] = useState<string>('Semua');
 
-  // Filter items by simple keyword/genre match if selected
-  const filterByGenre = (items: AnimeItem[]) => {
-    if (selectedGenre === 'Semua') return items;
-    const g = selectedGenre.toLowerCase();
-    return items.filter((item) => item.title.toLowerCase().includes(g));
+  // Genre Scraper State from https://otakudesu.blog/genre-list/
+  const [genreList, setGenreList] = useState<Array<{ name: string; slug: string }>>([]);
+  const [selectedGenreSlug, setSelectedGenreSlug] = useState<string>('all');
+  const [genreAnimeList, setGenreAnimeList] = useState<AnimeItem[]>([]);
+  const [loadingGenre, setLoadingGenre] = useState<boolean>(false);
+  const [loadingGenresList, setLoadingGenresList] = useState<boolean>(false);
+
+  // Load genres from backend on mount
+  useEffect(() => {
+    setLoadingGenresList(true);
+    fetchGenreList()
+      .then((genres) => {
+        if (genres && genres.length > 0) {
+          setGenreList(genres);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load genre list:', err);
+      })
+      .finally(() => {
+        setLoadingGenresList(false);
+      });
+  }, []);
+
+  // When user picks a genre, fetch anime in that genre from backend
+  const handleSelectGenre = async (slug: string) => {
+    setSelectedGenreSlug(slug);
+    if (slug === 'all') {
+      setGenreAnimeList([]);
+      return;
+    }
+
+    setLoadingGenre(true);
+    try {
+      const result = await fetchAnimeByGenre(slug);
+      setGenreAnimeList(result.data || []);
+    } catch (err) {
+      console.error(`Failed to fetch anime for genre ${slug}:`, err);
+      setGenreAnimeList([]);
+    } finally {
+      setLoadingGenre(false);
+    }
   };
-
-  const filteredOngoing = useMemo(
-    () => filterByGenre(ongoingList),
-    [ongoingList, selectedGenre]
-  );
-
-  const filteredComplete = useMemo(
-    () => filterByGenre(completeList),
-    [completeList, selectedGenre]
-  );
 
   // Featured Anime for Hero: Top Ongoing Anime
   const featuredAnime = ongoingList.length > 0 ? ongoingList[0] : null;
+
+  const currentGenreName = genreList.find((g) => g.slug === selectedGenreSlug)?.name || selectedGenreSlug;
 
   if (error && ongoingList.length === 0) {
     return (
@@ -184,31 +200,67 @@ export const HomePage: React.FC<HomePageProps> = ({
             {/* Trending Now (Ongoing Releases) */}
             <AnimeSection
               title="Trending Now"
-              items={filteredOngoing}
+              items={ongoingList}
             />
 
-            {/* Genre Filter Pills */}
+            {/* Genre Filter Pills from https://otakudesu.blog/genre-list/ */}
             <GenreFilters
-              genres={GENRE_LIST}
-              selectedGenre={selectedGenre}
-              onSelectGenre={setSelectedGenre}
+              genres={genreList}
+              selectedGenreSlug={selectedGenreSlug}
+              onSelectGenre={handleSelectGenre}
+              loading={loadingGenresList}
             />
 
-            {/* Continue Watching for You (100% Real Watch History) */}
-            {watchHistory.length > 0 && (
-              <AnimeSection
-                title="Continue Watching for You"
-                items={[]}
-                historyItems={watchHistory}
-                showProgress={true}
-              />
+            {/* If a genre is selected, display anime from that genre */}
+            {selectedGenreSlug !== 'all' ? (
+              <section className="w-full my-8">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-base sm:text-lg md:text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                    <span>Anime Genre: {currentGenreName}</span>
+                    <span className="text-xs font-normal text-white/40">
+                      ({genreAnimeList.length})
+                    </span>
+                  </h2>
+
+                  {loadingGenre && (
+                    <div className="flex items-center gap-2 text-xs text-white/60">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Memuat anime {currentGenreName}...</span>
+                    </div>
+                  )}
+                </div>
+
+                {genreAnimeList.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
+                    {genreAnimeList.map((anime) => (
+                      <AnimeCard key={`genre-${anime.slug}`} anime={anime} />
+                    ))}
+                  </div>
+                ) : !loadingGenre ? (
+                  <p className="text-xs text-white/40 py-8">
+                    Tidak ditemukan anime untuk genre {currentGenreName}.
+                  </p>
+                ) : null}
+              </section>
+            ) : (
+              <>
+                {/* Continue Watching for You (100% Real Watch History) */}
+                {watchHistory.length > 0 && (
+                  <AnimeSection
+                    title="Continue Watching for You"
+                    items={[]}
+                    historyItems={watchHistory}
+                    showProgress={true}
+                  />
+                )}
+
+                {/* Recommended For You (Complete Anime from API) */}
+                <AnimeSection
+                  title="Recommended For You"
+                  items={completeList}
+                />
+              </>
             )}
-
-            {/* Recommended For You (Complete Anime from API) */}
-            <AnimeSection
-              title="Recommended For You"
-              items={filteredComplete}
-            />
           </div>
         </>
       )}

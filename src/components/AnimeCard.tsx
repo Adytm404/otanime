@@ -74,8 +74,8 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({
 
         {/* Badge (e.g. "Episode 12" / "12 Episode") */}
         {displayBadge && (
-          <div className="absolute top-2.5 right-2.5 z-10">
-            <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-black/65 backdrop-blur-md border border-white/15 text-[10px] sm:text-xs font-semibold text-white/90 shadow">
+          <div className="absolute top-2.5 right-2.5 z-10 max-w-[80%]">
+            <span className="block truncate px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-black/75 backdrop-blur-md border border-white/15 text-[10px] sm:text-xs font-semibold text-white/90 shadow">
               {displayBadge}
             </span>
           </div>

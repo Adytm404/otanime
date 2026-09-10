@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { AnimeItem, WatchHistoryItem } from '../types/anime';
 import { AnimeCard } from './AnimeCard';
+import { formatShortEpisode } from '../utils/formatters';
 
 interface AnimeSectionProps {
   title: string;
@@ -116,7 +117,7 @@ export const AnimeSection: React.FC<AnimeSectionProps> = ({
                   showProgress={true}
                   progress={h.progress}
                   targetEpisodeSlug={h.episode_slug}
-                  badgeText={h.episode_title}
+                  badgeText={formatShortEpisode(h.episode_title, h.episode_slug)}
                 />
               </div>
             ))

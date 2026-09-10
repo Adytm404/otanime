@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { fetchAnimeDetail } from '../services/otakudesuApi';
 import { AnimeDetail, AnimeItem } from '../types/anime';
 import { AnimeCard } from '../components/AnimeCard';
+import { parseEpisodeInfo } from '../utils/formatters';
 import {
   Play,
   Heart,
@@ -107,14 +108,28 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
     }
   };
 
-  // Sort episodes: latest first or earliest first
-  const filteredEpisodes = anime.episodes.filter((ep) =>
+  // Sort episodes descending by episode number: highest/newest at top
+  const sortedEpisodes = useMemo(() => {
+    if (!anime?.episodes) return [];
+    return [...anime.episodes].sort((a, b) => {
+      const infoA = parseEpisodeInfo(a.title, a.slug);
+      const infoB = parseEpisodeInfo(b.title, b.slug);
+      if (infoA.epInt && infoB.epInt) {
+        return infoB.epInt - infoA.epInt; // Descending: newest first
+      }
+      return 0;
+    });
+  }, [anime?.episodes]);
+
+  const filteredEpisodes = sortedEpisodes.filter((ep) =>
     ep.title.toLowerCase().includes(episodeSearch.toLowerCase()) ||
     ep.slug.toLowerCase().includes(episodeSearch.toLowerCase())
   );
 
-  // First episode to watch: last element or first element depending on ordering
-  const firstEpisode = anime.episodes.length > 0 ? anime.episodes[anime.episodes.length - 1] : null;
+  // Latest episode is the first one in sortedEpisodes
+  const latestEpisode = sortedEpisodes.length > 0 ? sortedEpisodes[0] : null;
+  // Earliest episode is the last one in sortedEpisodes
+  const earliestEpisode = sortedEpisodes.length > 0 ? sortedEpisodes[sortedEpisodes.length - 1] : null;
 
   return (
     <div className="min-h-screen bg-[#121214] text-white selection:bg-white selection:text-black">
@@ -244,17 +259,26 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
             </div>
 
             {/* Watch Action Buttons */}
-            {firstEpisode && (
-              <div className="flex items-center justify-center md:justify-start gap-3 pt-1">
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 pt-1">
+              {latestEpisode && (
                 <Link
-                  to={`/anime/${slug}/${firstEpisode.slug}`}
+                  to={`/anime/${slug}/${latestEpisode.slug}`}
                   className="flex items-center gap-2 px-6 sm:px-8 py-3 rounded-full bg-white text-black font-bold text-xs sm:text-sm hover:bg-white/90 active:scale-95 transition-all shadow-lg shadow-black/40 group"
                 >
                   <Play className="w-4 h-4 fill-black text-black transition-transform group-hover:scale-110" />
-                  <span>Mulai Nonton ({firstEpisode.title.split('Episode')[1] ? `Episode ${firstEpisode.title.split('Episode')[1].trim().split(' ')[0]}` : 'Episode 1'})</span>
+                  <span>Nonton Terbaru ({parseEpisodeInfo(latestEpisode.title, latestEpisode.slug).epNumber})</span>
                 </Link>
-              </div>
-            )}
+              )}
+
+              {earliestEpisode && earliestEpisode.slug !== latestEpisode?.slug && (
+                <Link
+                  to={`/anime/${slug}/${earliestEpisode.slug}`}
+                  className="flex items-center gap-2 px-5 sm:px-6 py-3 rounded-full bg-white/10 hover:bg-white/15 text-white font-semibold text-xs sm:text-sm border border-white/10 transition-colors"
+                >
+                  <span>Mulai dari {parseEpisodeInfo(earliestEpisode.title, earliestEpisode.slug).epNumber}</span>
+                </Link>
+              )}
+            </div>
 
             {/* Synopsis */}
             <div className="text-left bg-white/[0.04] p-4 sm:p-5 rounded-2xl border border-white/5">
@@ -329,39 +353,49 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
           {/* Episode Cards Grid */}
           {filteredEpisodes.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-              {filteredEpisodes.map((ep) => (
-                <Link
-                  key={`ep-${ep.slug}`}
-                  to={`/anime/${slug}/${ep.slug}`}
-                  className="group p-3 sm:p-3.5 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 hover:border-white/20 transition-all flex items-center gap-3 sm:gap-4"
-                >
-                  {/* Episode Icon Preview */}
-                  <div className="relative w-16 sm:w-20 aspect-video rounded-xl overflow-hidden bg-black/50 flex-shrink-0 flex items-center justify-center">
-                    <img
-                      src={anime.poster}
-                      alt={ep.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-60"
-                    />
-                    <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                      <div className="w-6 h-6 rounded-full bg-white text-black flex items-center justify-center shadow">
-                        <Play className="w-3 h-3 fill-black text-black ml-0.5" />
+              {filteredEpisodes.map((ep, index) => {
+                const epInfo = parseEpisodeInfo(ep.title, ep.slug);
+                const isLatest = index === 0 && !episodeSearch;
+
+                return (
+                  <Link
+                    key={`ep-${ep.slug}`}
+                    to={`/anime/${slug}/${ep.slug}`}
+                    className="group p-3 sm:p-3.5 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 hover:border-white/20 transition-all flex items-center gap-3 sm:gap-4"
+                  >
+                    {/* Episode Icon Preview */}
+                    <div className="relative w-16 sm:w-20 aspect-video rounded-xl overflow-hidden bg-black/50 flex-shrink-0 flex items-center justify-center">
+                      <img
+                        src={anime.poster}
+                        alt={ep.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-60"
+                      />
+                      <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                        <div className="w-6 h-6 rounded-full bg-white text-black flex items-center justify-center shadow">
+                          <Play className="w-3 h-3 fill-black text-black ml-0.5" />
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Episode Meta */}
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-xs sm:text-sm font-semibold text-white/90 group-hover:text-white truncate">
-                      {ep.title}
-                    </h4>
-                    {ep.uploaded_at && (
-                      <span className="text-[11px] text-white/40 mt-0.5 block">
-                        {ep.uploaded_at}
-                      </span>
-                    )}
-                  </div>
-                </Link>
-              ))}
+                    {/* Episode Meta */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="px-2.5 py-0.5 rounded-lg bg-rose-600/25 border border-rose-500/40 text-rose-300 font-bold text-xs sm:text-sm">
+                          {epInfo.epNumber}
+                        </span>
+                        {isLatest && (
+                          <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-semibold">
+                            Terbaru
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-white/50 truncate">
+                        {ep.uploaded_at ? `${ep.uploaded_at} • Sub Indo` : 'Subtitle Indonesia'}
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           ) : (
             <p className="text-xs text-white/40 py-6">Tidak ada episode yang cocok dengan pencarian.</p>

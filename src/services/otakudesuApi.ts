@@ -41,6 +41,14 @@ export async function searchAnime(query: string): Promise<AnimeItem[]> {
   return await fetchJson<AnimeItem[]>(`/search?q=${encodeURIComponent(query)}`);
 }
 
+export async function fetchGenreList(): Promise<Array<{ name: string; slug: string }>> {
+  return await fetchJson<Array<{ name: string; slug: string }>>('/genres');
+}
+
+export async function fetchAnimeByGenre(genreSlug: string, page: number = 1): Promise<PagedAnimeData> {
+  return await fetchJson<PagedAnimeData>(`/genres/${genreSlug}?page=${page}`);
+}
+
 export async function fetchAnimeDetail(slug: string): Promise<AnimeDetail> {
   return await fetchJson<AnimeDetail>(`/anime/${slug}`);
 }

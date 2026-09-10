@@ -7,6 +7,7 @@ import {
   resolveDownload
 } from '../services/otakudesuApi';
 import { EpisodeDetail, AnimeDetail, MirrorStream, AnimeItem } from '../types/anime';
+import { parseEpisodeInfo } from '../utils/formatters';
 import {
   ChevronLeft,
   ChevronRight,
@@ -563,8 +564,15 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
 
                       {/* Episode Info */}
                       <div className="flex-1 min-w-0">
-                        <p className={`text-xs font-semibold truncate ${isActive ? 'text-rose-400' : 'text-white/90'}`}>
-                          {ep.title}
+                        <span
+                          className={`text-xs font-bold block ${
+                            isActive ? 'text-rose-400' : 'text-white/90'
+                          }`}
+                        >
+                          {parseEpisodeInfo(ep.title, ep.slug).epNumber}
+                        </span>
+                        <p className="text-[11px] text-white/50 truncate">
+                          {ep.title.replace(/^.*?(?:Episode|Eps\.?|Ep)\s*\d+/i, '').trim() || 'Sub Indo'}
                         </p>
                       </div>
                     </Link>

@@ -1,8 +1,10 @@
 import { Hono } from 'hono';
 import {
+  getAnimeByGenre,
   getAnimeDetail,
   getComplete,
   getEpisodeDetail,
+  getGenreList,
   getHome,
   getOngoing,
   searchAnime,
@@ -68,6 +70,34 @@ animeRouter.get('/search', async (c) => {
 
   const data = await searchAnime(query);
   setCache(cacheKey, data, 600);
+  return c.json({ success: true, cached: false, data });
+});
+
+// GET /api/genres
+animeRouter.get('/genres', async (c) => {
+  const cacheKey = 'genres:list';
+  const cached = getCache(cacheKey);
+  if (cached) {
+    return c.json({ success: true, cached: true, data: cached });
+  }
+
+  const data = await getGenreList();
+  setCache(cacheKey, data, 86400); // 24 hours
+  return c.json({ success: true, cached: false, data });
+});
+
+// GET /api/genres/:slug?page=1
+animeRouter.get('/genres/:slug', async (c) => {
+  const slug = c.req.param('slug');
+  const page = parseInt(c.req.query('page') || '1', 10);
+  const cacheKey = `genres:${slug}:${page}`;
+  const cached = getCache(cacheKey);
+  if (cached) {
+    return c.json({ success: true, cached: true, data: cached });
+  }
+
+  const data = await getAnimeByGenre(slug, page);
+  setCache(cacheKey, data, 600); // 10 minutes
   return c.json({ success: true, cached: false, data });
 });
 
