@@ -6,6 +6,8 @@ import type {
   AnimeItem,
   DownloadResolution,
   EpisodeDetail,
+  Genre,
+  GenreAnimeItem,
   HomeData,
   MirrorStream,
 } from '../types';
@@ -419,4 +421,74 @@ export async function getEpisodeDetail(slug: string): Promise<EpisodeDetail> {
       genres,
     },
   };
+}
+
+export async function getGenres(): Promise<Genre[]> {
+  const html = await fetchHtml('/genre-list/');
+  const $ = cheerio.load(html);
+
+  const genres: Genre[] = [];
+  $('ul.genres li a').each((_, el) => {
+    const name = $(el).text().trim();
+    const href = $(el).attr('href');
+    if (name && href) {
+      genres.push({
+        name,
+        slug: extractSlug(href, 'genres'),
+      });
+    }
+  });
+
+  return genres;
+}
+
+export async function getAnimeByGenre(
+  genreSlug: string,
+  page = 1
+): Promise<{ data: GenreAnimeItem[]; currentPage: number; hasNextPage: boolean }> {
+  const url = page > 1 ? `/genres/${genreSlug}/page/${page}/` : `/genres/${genreSlug}/`;
+  const html = await fetchHtml(url);
+  const $ = cheerio.load(html);
+
+  const data: GenreAnimeItem[] = [];
+  $('.col-anime-con').each((_, el) => {
+    const $el = $(el);
+    const title = $el.find('.col-anime-title a').text().trim();
+    const href = $el.find('.col-anime-title a').attr('href');
+    const thumb = $el.find('.col-anime-cover img').attr('src') || '';
+    const studio = $el.find('.col-anime-studio').text().trim() || undefined;
+    const episodes = $el.find('.col-anime-eps').text().trim() || undefined;
+    const rating = $el.find('.col-anime-rating').text().trim() || undefined;
+    const synopsis = $el.find('.col-synopsis p').text().trim() || undefined;
+    const season = $el.find('.col-anime-date').text().trim() || undefined;
+
+    const genres: Genre[] = [];
+    $el.find('.col-anime-genre a').each((__, a) => {
+      const gName = $(a).text().trim();
+      const gHref = $(a).attr('href');
+      if (gName && gHref) {
+        genres.push({
+          name: gName,
+          slug: extractSlug(gHref, 'genres'),
+        });
+      }
+    });
+
+    if (title && href) {
+      data.push({
+        title,
+        slug: extractSlug(href, 'anime'),
+        thumb,
+        studio,
+        episodes,
+        rating,
+        genres,
+        synopsis,
+        season,
+      });
+    }
+  });
+
+  const hasNextPage = $('.pagination .next').length > 0;
+  return { data, currentPage: page, hasNextPage };
 }

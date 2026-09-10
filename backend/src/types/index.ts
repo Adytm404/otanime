@@ -88,3 +88,21 @@ export interface EpisodeDetail {
     genres?: string[];
   };
 }
+
+export interface Genre {
+  name: string;
+  slug: string;
+}
+
+export interface GenreAnimeItem {
+  title: string;
+  slug: string;
+  thumb: string;
+  studio?: string;
+  episodes?: string;
+  rating?: string;
+  genres: Genre[];
+  synopsis?: string;
+  season?: string;
+}
+
