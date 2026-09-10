@@ -130,7 +130,9 @@ export interface WatchHistoryItem {
   episode_slug: string;
   episode_title: string;
   thumb: string;
-  progress: number;
+  progress: number; // 0 - 100 percentage
+  currentTime?: number; // timestamp in seconds
+  duration?: number; // total duration in seconds
   updated_at: number;
 }
 

@@ -17,6 +17,8 @@ interface JWVideoPlayerProps {
   src: string;
   title: string;
   poster?: string;
+  initialTime?: number;
+  onProgress?: (currentTime: number, duration: number) => void;
   onFallbackToEmbed?: () => void;
 }
 
@@ -24,10 +26,13 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
   src,
   title,
   poster,
+  initialTime,
+  onProgress,
   onFallbackToEmbed
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const lastProgressReportRef = useRef<number>(0);
 
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
@@ -207,11 +212,25 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
       if (v.buffered.length > 0) {
         setBuffered((v.buffered.end(v.buffered.length - 1) / (v.duration || 1)) * 100);
       }
+
+      // Throttle progress reporting every 2.5 seconds
+      const now = Date.now();
+      if (now - lastProgressReportRef.current > 2500) {
+        lastProgressReportRef.current = now;
+        if (onProgress && v.duration > 0) {
+          onProgress(v.currentTime, v.duration);
+        }
+      }
     };
 
     const onLoadedMetadata = () => {
       setDuration(v.duration);
       setError(null);
+      // Resume from previous timestamp if provided
+      if (initialTime && initialTime > 0 && initialTime < v.duration - 5) {
+        v.currentTime = initialTime;
+        setCurrentTime(initialTime);
+      }
     };
 
     const onWaiting = () => setIsBuffering(true);
@@ -219,7 +238,12 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
       setIsBuffering(false);
       setIsPlaying(true);
     };
-    const onPause = () => setIsPlaying(false);
+    const onPause = () => {
+      setIsPlaying(false);
+      if (onProgress && v.duration > 0) {
+        onProgress(v.currentTime, v.duration);
+      }
+    };
     const onError = () => {
       setError('Direct video stream gagal diputar atau format tidak didukung.');
       setIsBuffering(false);
@@ -233,6 +257,9 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
     v.addEventListener('error', onError);
 
     return () => {
+      if (onProgress && v.duration > 0) {
+        onProgress(v.currentTime, v.duration);
+      }
       v.removeEventListener('timeupdate', onTimeUpdate);
       v.removeEventListener('loadedmetadata', onLoadedMetadata);
       v.removeEventListener('waiting', onWaiting);
@@ -240,7 +267,7 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
       v.removeEventListener('pause', onPause);
       v.removeEventListener('error', onError);
     };
-  }, [src]);
+  }, [src, initialTime, onProgress]);
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
 

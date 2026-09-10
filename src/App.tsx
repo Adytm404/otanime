@@ -30,7 +30,7 @@ const AppContent: React.FC = () => {
   // My List (Local Storage Persistence)
   const [myList, setMyList] = useState<AnimeItem[]>(() => {
     try {
-      const saved = localStorage.getItem('otakudesu_my_list');
+      const saved = localStorage.getItem('otanime_my_list') || localStorage.getItem('otakudesu_my_list');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -40,7 +40,7 @@ const AppContent: React.FC = () => {
   // Continue Watching History (Local Storage Persistence)
   const [watchHistory, setWatchHistory] = useState<WatchHistoryItem[]>(() => {
     try {
-      const saved = localStorage.getItem('otakudesu_watch_history');
+      const saved = localStorage.getItem('otanime_watch_history') || localStorage.getItem('otakudesu_watch_history');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -83,7 +83,7 @@ const AppContent: React.FC = () => {
   // Sync My List to LocalStorage
   useEffect(() => {
     try {
-      localStorage.setItem('otakudesu_my_list', JSON.stringify(myList));
+      localStorage.setItem('otanime_my_list', JSON.stringify(myList));
     } catch (e) {
       console.error(e);
     }
@@ -92,7 +92,7 @@ const AppContent: React.FC = () => {
   // Sync Watch History to LocalStorage
   useEffect(() => {
     try {
-      localStorage.setItem('otakudesu_watch_history', JSON.stringify(watchHistory));
+      localStorage.setItem('otanime_watch_history', JSON.stringify(watchHistory));
     } catch (e) {
       console.error(e);
     }
@@ -124,6 +124,8 @@ const AppContent: React.FC = () => {
     episode_title: string;
     thumb: string;
     progress: number;
+    currentTime?: number;
+    duration?: number;
   }) => {
     setWatchHistory((prev) => {
       const filtered = prev.filter((h) => h.anime_slug !== item.anime_slug);
@@ -239,6 +241,7 @@ const AppContent: React.FC = () => {
             element={
               <AnimeWatchPage
                 myList={myList}
+                watchHistory={watchHistory}
                 onToggleFavorite={toggleFavorite}
                 onSaveHistory={handleSaveHistory}
               />

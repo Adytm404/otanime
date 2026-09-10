@@ -93,10 +93,10 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({
 
         {/* Progress Bar for "Continue Watching" */}
         {showProgress && (
-          <div className="absolute bottom-0 left-0 right-0 h-1 sm:h-1.5 bg-white/20 z-10">
+          <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-black/60 backdrop-blur-sm z-10 overflow-hidden">
             <div
-              className="h-full bg-rose-600 rounded-r-full"
-              style={{ width: `${Math.max(10, Math.min(100, progress))}%` }}
+              className="h-full bg-rose-600 rounded-r-full shadow-sm shadow-rose-500 transition-all duration-300"
+              style={{ width: `${Math.max(4, Math.min(100, progress))}%` }}
             />
           </div>
         )}

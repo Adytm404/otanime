@@ -6,7 +6,7 @@ import {
   resolveMirror,
   resolveDownload
 } from '../services/otakudesuApi';
-import { EpisodeDetail, AnimeDetail, MirrorStream, AnimeItem } from '../types/anime';
+import { EpisodeDetail, AnimeDetail, MirrorStream, AnimeItem, WatchHistoryItem } from '../types/anime';
 import { parseEpisodeInfo } from '../utils/formatters';
 import { JWVideoPlayer } from '../components/JWVideoPlayer';
 import {
@@ -30,6 +30,7 @@ import {
 
 interface AnimeWatchPageProps {
   myList: AnimeItem[];
+  watchHistory?: WatchHistoryItem[];
   onToggleFavorite: (anime: AnimeItem) => void;
   onSaveHistory: (item: {
     anime_slug: string;
@@ -38,11 +39,14 @@ interface AnimeWatchPageProps {
     episode_title: string;
     thumb: string;
     progress: number;
+    currentTime?: number;
+    duration?: number;
   }) => void;
 }
 
 export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
   myList,
+  watchHistory = [],
   onToggleFavorite,
   onSaveHistory
 }) => {
@@ -112,14 +116,20 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
           setPlayerMode('embed');
         }
 
-        // Save to Watch History
+        // Find existing history or initialize with initial progress
+        const prevHistory = watchHistory.find(
+          (h) => h.anime_slug === animeSlug && h.episode_slug === targetEpSlug
+        );
+
         onSaveHistory({
           anime_slug: animeSlug,
           anime_title: animeData.title,
           episode_slug: targetEpSlug,
           episode_title: epData.title,
           thumb: animeData.poster,
-          progress: 50
+          progress: prevHistory?.progress || 10,
+          currentTime: prevHistory?.currentTime || 0,
+          duration: prevHistory?.duration || 1440
         });
 
         setLoading(false);
@@ -151,6 +161,52 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
       window.open = originalOpen;
     };
   }, []);
+
+  // Find active history item for resuming playback
+  const existingHistory = watchHistory.find(
+    (h) => h.anime_slug === animeSlug && (h.episode_slug === episodeSlugParam || h.episode_title === episode?.title)
+  );
+
+  const handleVideoProgress = (currentTime: number, duration: number) => {
+    if (!anime || !episode) return;
+    const pct = Math.min(100, Math.max(5, Math.round((currentTime / duration) * 100)));
+    onSaveHistory({
+      anime_slug: animeSlug,
+      anime_title: anime.title,
+      episode_slug: episodeSlugParam,
+      episode_title: episode.title,
+      thumb: anime.poster,
+      progress: pct,
+      currentTime: Math.round(currentTime),
+      duration: Math.round(duration)
+    });
+  };
+
+  // Track progress for embed mirror mode while tab is active
+  useEffect(() => {
+    if (playerMode !== 'embed' || !anime || !episode) return;
+
+    let elapsed = existingHistory?.currentTime || 20;
+    const totalDuration = existingHistory?.duration || 1440;
+
+    const timer = setInterval(() => {
+      if (document.hidden) return;
+      elapsed += 4;
+      const pct = Math.min(95, Math.max(10, Math.round((elapsed / totalDuration) * 100)));
+      onSaveHistory({
+        anime_slug: animeSlug,
+        anime_title: anime.title,
+        episode_slug: episodeSlugParam,
+        episode_title: episode.title,
+        thumb: anime.poster,
+        progress: pct,
+        currentTime: elapsed,
+        duration: totalDuration
+      });
+    }, 4000);
+
+    return () => clearInterval(timer);
+  }, [playerMode, anime?.title, episode?.title, animeSlug, episodeSlugParam]);
 
   // Handle switching mirror server
   const handleSelectMirror = async (mirror: MirrorStream) => {
@@ -303,6 +359,8 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
                   src={currentDirectUrl}
                   title={episode.title}
                   poster={anime?.poster}
+                  initialTime={existingHistory?.currentTime}
+                  onProgress={handleVideoProgress}
                   onFallbackToEmbed={() => {
                     setPlayerMode('embed');
                     setCurrentEmbedUrl(episode.stream_url);
