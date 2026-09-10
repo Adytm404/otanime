@@ -78,6 +78,7 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
   // Load episode and anime data
   useEffect(() => {
     if (!animeSlug) return;
+    let cancelled = false;
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setLoading(true);
     setError(null);
@@ -86,6 +87,7 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
       try {
         // 1. Fetch Anime detail first if needed to resolve episode slugs
         const animeData = await fetchAnimeDetail(animeSlug);
+        if (cancelled) return;
         setAnime(animeData);
 
         let targetEpSlug = episodeSlugParam;
@@ -105,6 +107,7 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
 
         // 2. Fetch episode detail
         const epData = await fetchEpisodeDetail(targetEpSlug);
+        if (cancelled) return;
         setEpisode(epData);
 
         // Set initial stream URL
@@ -134,6 +137,7 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
 
         setLoading(false);
       } catch (err: any) {
+        if (cancelled) return;
         console.error('Failed loading episode stream:', err);
         setError(err.message || 'Gagal memuat video episode');
         setLoading(false);
@@ -141,6 +145,10 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
     };
 
     loadStream();
+
+    return () => {
+      cancelled = true;
+    };
   }, [animeSlug, episodeSlugParam]);
 
   // Scroll active episode into view

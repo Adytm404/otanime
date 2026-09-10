@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { HomePage } from './pages/HomePage';
 import { GenrePage } from './pages/GenrePage';
@@ -12,7 +12,6 @@ import { AnimeItem, WatchHistoryItem, NavTab } from './types/anime';
 import { ExternalLink, Activity, X, CheckCircle2, Server } from 'lucide-react';
 
 const AppContent: React.FC = () => {
-  const navigate = useNavigate();
   const location = useLocation();
 
   const [currentTab, setCurrentTab] = useState<NavTab>('home');
@@ -180,15 +179,6 @@ const AppContent: React.FC = () => {
   const handleTabChange = (tab: NavTab) => {
     setCurrentTab(tab);
     setSearchQuery('');
-    if (tab === 'home') {
-      navigate('/');
-    } else if (tab === 'genres') {
-      navigate('/genres');
-    } else if (tab === 'my-list') {
-      navigate('/my-list');
-    } else if (tab === 'new-season') {
-      navigate('/new-season');
-    }
   };
 
   return (
