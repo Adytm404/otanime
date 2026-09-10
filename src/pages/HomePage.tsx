@@ -277,9 +277,9 @@ export const HomePage: React.FC<HomePageProps> = ({
 
           {/* Main Sections Container */}
           <div className="max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-10 -mt-12 sm:-mt-16 md:-mt-20 relative z-20 pb-20">
-            {/* Trending Now (Ongoing Releases) */}
+            {/* Newest Anime (Ongoing Releases) */}
             <AnimeSection
-              title="Trending Now"
+              title="Newest Anime"
               items={ongoingList}
             />
 
