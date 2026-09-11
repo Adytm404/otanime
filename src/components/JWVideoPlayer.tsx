@@ -441,9 +441,9 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
         </div>
 
         {/* Bottom Action Controls */}
-        <div className="flex items-center justify-between gap-2 text-white">
+        <div className="flex items-center justify-between gap-1.5 sm:gap-2 text-white min-w-0">
           {/* Left Controls: Play, Skip, Volume, Time */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1 sm:gap-3 min-w-0">
             <button
               onClick={togglePlay}
               className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors focus:outline-none"
@@ -458,7 +458,7 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
 
             <button
               onClick={() => skip(-10)}
-              className="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors text-white/80 hover:text-white"
+              className="hidden sm:flex w-7 h-7 rounded-lg hover:bg-white/10 items-center justify-center transition-colors text-white/80 hover:text-white"
               title="Mundur 10 detik"
             >
               <RotateCcw className="w-4 h-4" />
@@ -466,7 +466,7 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
 
             <button
               onClick={() => skip(10)}
-              className="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors text-white/80 hover:text-white"
+              className="hidden sm:flex w-7 h-7 rounded-lg hover:bg-white/10 items-center justify-center transition-colors text-white/80 hover:text-white"
               title="Maju 10 detik"
             >
               <RotateCw className="w-4 h-4" />
@@ -493,26 +493,26 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
                 step="0.05"
                 value={isMuted ? 0 : volume}
                 onChange={handleVolumeChange}
-                className="w-16 sm:w-20 h-1 accent-rose-600 bg-white/20 rounded-full cursor-pointer opacity-80 hover:opacity-100 transition-opacity"
+                className="hidden sm:block w-20 h-1 accent-rose-600 bg-white/20 rounded-full cursor-pointer opacity-80 hover:opacity-100 transition-opacity"
                 aria-label="Volume"
               />
             </div>
 
             {/* Time Indicator */}
-            <div className="text-[11px] sm:text-xs text-white/80 font-mono ml-1">
+            <div className="text-[10px] sm:text-xs text-white/80 font-mono ml-0.5 sm:ml-1 whitespace-nowrap">
               <span>{formatTime(currentTime)}</span>
-              <span className="text-white/40 mx-1">/</span>
-              <span className="text-white/50">{formatTime(duration)}</span>
+              <span className="hidden sm:inline text-white/40 mx-1">/</span>
+              <span className="hidden sm:inline text-white/50">{formatTime(duration)}</span>
             </div>
           </div>
 
           {/* Right Controls: Speed, Fullscreen */}
-          <div className="flex items-center gap-2 relative">
+          <div className="flex items-center gap-1 sm:gap-2 relative flex-shrink-0">
             {/* Speed Settings Popup */}
             <div className="relative">
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className="px-2 py-1 rounded-lg hover:bg-white/10 text-xs font-semibold flex items-center gap-1 text-white/80 hover:text-white transition-colors"
+                className="hidden sm:flex px-2 py-1 rounded-lg hover:bg-white/10 text-xs font-semibold items-center gap-1 text-white/80 hover:text-white transition-colors"
                 title="Kecepatan Video"
               >
                 <span>{playbackSpeed}x</span>
@@ -545,7 +545,7 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
             {/* Fullscreen Toggle */}
             <button
               onClick={toggleFullscreen}
-              className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/80 hover:text-white transition-colors"
+              className="w-9 h-9 sm:w-8 sm:h-8 rounded-lg bg-white/10 sm:bg-transparent hover:bg-white/15 flex items-center justify-center text-white hover:text-white transition-colors flex-shrink-0"
               aria-label={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
             >
               {isFullscreen ? (
