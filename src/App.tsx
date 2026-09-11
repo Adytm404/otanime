@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { HomePage } from './pages/HomePage';
@@ -116,7 +116,7 @@ const AppContent: React.FC = () => {
     setMyList([]);
   };
 
-  const handleSaveHistory = (item: {
+  const handleSaveHistory = useCallback((item: {
     anime_slug: string;
     anime_title: string;
     episode_slug: string;
@@ -137,7 +137,7 @@ const AppContent: React.FC = () => {
       };
       return [newEntry, ...filtered].slice(0, 100); // Keep last 100 watched episodes
     });
-  };
+  }, []);
 
   // Group latest episode per anime for Continue Watching on homepage
   const continueWatchingList = useMemo(() => {

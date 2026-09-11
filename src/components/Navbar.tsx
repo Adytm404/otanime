@@ -74,7 +74,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Left: Logo & Nav items */}
         <div className="flex items-center gap-6 lg:gap-8">
           {/* Swirl Logo & Brand Name */}
-          <button
+          <Link
+            to="/"
             onClick={() => onTabChange('home')}
             className="flex items-center gap-2.5 group focus:outline-none"
             aria-label="Otanime Home"
@@ -97,7 +98,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="text-base sm:text-lg font-bold tracking-tight text-white group-hover:text-rose-400 transition-colors">
               Otanime
             </span>
-          </button>
+          </Link>
 
           {/* Desktop Nav Links */}
           <nav className="hidden md:flex items-center gap-6 lg:gap-7 text-sm font-medium">

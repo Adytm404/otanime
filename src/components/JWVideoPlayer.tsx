@@ -33,6 +33,8 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const lastProgressReportRef = useRef<number>(0);
+  const onProgressRef = useRef(onProgress);
+  const initialTimeRef = useRef(initialTime);
 
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
@@ -66,6 +68,14 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
   const [showSettings, setShowSettings] = useState<boolean>(false);
 
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    onProgressRef.current = onProgress;
+  }, [onProgress]);
+
+  useEffect(() => {
+    initialTimeRef.current = initialTime;
+  }, [initialTime]);
 
   // Format seconds to mm:ss or hh:mm:ss
   const formatTime = (timeInSeconds: number) => {
@@ -235,8 +245,8 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
       const now = Date.now();
       if (now - lastProgressReportRef.current > 2500) {
         lastProgressReportRef.current = now;
-        if (onProgress && v.duration > 0) {
-          onProgress(v.currentTime, v.duration);
+        if (onProgressRef.current && v.duration > 0) {
+          onProgressRef.current(v.currentTime, v.duration);
         }
       }
     };
@@ -247,9 +257,10 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
       v.volume = isMuted ? 0 : volume;
       v.muted = isMuted;
       // Resume from previous timestamp if provided
-      if (initialTime && initialTime > 0 && initialTime < v.duration - 5) {
-        v.currentTime = initialTime;
-        setCurrentTime(initialTime);
+      const resumeTime = initialTimeRef.current;
+      if (resumeTime && resumeTime > 0 && resumeTime < v.duration - 5) {
+        v.currentTime = resumeTime;
+        setCurrentTime(resumeTime);
       }
     };
 
@@ -260,8 +271,8 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
     };
     const onPause = () => {
       setIsPlaying(false);
-      if (onProgress && v.duration > 0) {
-        onProgress(v.currentTime, v.duration);
+      if (onProgressRef.current && v.duration > 0) {
+        onProgressRef.current(v.currentTime, v.duration);
       }
     };
     const onError = () => {
@@ -277,8 +288,8 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
     v.addEventListener('error', onError);
 
     return () => {
-      if (onProgress && v.duration > 0) {
-        onProgress(v.currentTime, v.duration);
+      if (onProgressRef.current && v.duration > 0) {
+        onProgressRef.current(v.currentTime, v.duration);
       }
       v.removeEventListener('timeupdate', onTimeUpdate);
       v.removeEventListener('loadedmetadata', onLoadedMetadata);
@@ -287,7 +298,15 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
       v.removeEventListener('pause', onPause);
       v.removeEventListener('error', onError);
     };
-  }, [src, initialTime, onProgress]);
+  }, [src]);
+
+  useEffect(() => {
+    return () => {
+      if (document.fullscreenElement === containerRef.current) {
+        document.exitFullscreen().catch(() => undefined);
+      }
+    };
+  }, []);
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
 

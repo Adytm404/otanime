@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   fetchEpisodeDetail,
@@ -163,7 +163,7 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
     (h) => h.anime_slug === animeSlug && (h.episode_slug === episodeSlugParam || h.episode_title === episode?.title)
   );
 
-  const handleVideoProgress = (currentTime: number, duration: number) => {
+  const handleVideoProgress = useCallback((currentTime: number, duration: number) => {
     if (!anime || !episode) return;
     const pct = Math.min(100, Math.max(5, Math.round((currentTime / duration) * 100)));
     onSaveHistory({
@@ -176,7 +176,7 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
       currentTime: Math.round(currentTime),
       duration: Math.round(duration)
     });
-  };
+  }, [anime, episode, animeSlug, episodeSlugParam, onSaveHistory]);
 
   // Track progress for embed mirror mode while tab is active
   useEffect(() => {
