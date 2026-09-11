@@ -157,9 +157,6 @@ export const HomePage: React.FC<HomePageProps> = ({
     };
   }, [selectedGenreSlug, hasMoreGenre, loadingGenre, loadingMoreGenre, loadMoreGenreAnime]);
 
-  // Featured Anime for Hero: Top Ongoing Anime
-  const featuredAnime = ongoingList.length > 0 ? ongoingList[0] : null;
-
   const currentGenreName = genreList.find((g) => g.slug === selectedGenreSlug)?.name || selectedGenreSlug;
 
   if (error && ongoingList.length === 0) {
@@ -214,9 +211,9 @@ export const HomePage: React.FC<HomePageProps> = ({
       ) : (
         /* Default Home View */
         <>
-          {/* Hero Banner (Featured Anime from API) */}
+          {/* Hero Slider (Top 5 Featured Anime with 30s Auto-Advance & Trailer Background) */}
           <Hero
-            anime={featuredAnime}
+            items={ongoingList}
             loading={loading}
             onPlay={(slug) => navigate(`/anime/${slug}`)}
             onMoreInfo={(slug) => navigate(`/anime/${slug}`)}
