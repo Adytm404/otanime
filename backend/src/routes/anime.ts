@@ -9,6 +9,7 @@ import {
   getOngoing,
   searchAnime,
 } from '../services/scraper';
+import { getAnimeExtraDetails } from '../services/jikan';
 import { resolveDownloadUrl, resolveMirror } from '../services/stream';
 import { getCache, setCache } from '../utils/cache';
 
@@ -112,6 +113,27 @@ animeRouter.get('/anime/:slug', async (c) => {
 
   const data = await getAnimeDetail(slug);
   setCache(cacheKey, data, 600);
+  return c.json({ success: true, cached: false, data });
+});
+
+// GET /api/anime/:slug/extra
+animeRouter.get('/anime/:slug/extra', async (c) => {
+  const slug = c.req.param('slug');
+  const cacheKey = `anime:extra:${slug}`;
+  const cached = getCache(cacheKey);
+  if (cached) {
+    return c.json({ success: true, cached: true, data: cached });
+  }
+
+  const detailCacheKey = `anime:${slug}`;
+  let detail = getCache(detailCacheKey);
+  if (!detail) {
+    detail = await getAnimeDetail(slug);
+    setCache(detailCacheKey, detail, 600);
+  }
+
+  const data = await getAnimeExtraDetails(detail);
+  setCache(cacheKey, data, 86400); // 24 hours
   return c.json({ success: true, cached: false, data });
 });
 

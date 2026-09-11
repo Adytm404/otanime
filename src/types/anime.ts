@@ -124,6 +124,51 @@ export interface EpisodeDetail {
   };
 }
 
+export interface AnimeStaffItem {
+  name: string;
+  role: string;
+  image?: string;
+}
+
+export interface AnimeCharacterItem {
+  character: {
+    name: string;
+    role: string;
+    image?: string;
+  };
+  voice_actor?: {
+    name: string;
+    language: string;
+    image?: string;
+  } | null;
+}
+
+export interface AnimeThemeSongs {
+  openings: string[];
+  endings: string[];
+}
+
+export interface AnimeExtraInfo {
+  mal_id?: number | null;
+  title_english?: string | null;
+  title_japanese?: string | null;
+  score?: number | null;
+  scored_by?: number | null;
+  rank?: number | null;
+  popularity?: number | null;
+  trailer?: {
+    youtube_id?: string | null;
+    url?: string | null;
+    embed_url?: string | null;
+    image_url?: string | null;
+  } | null;
+  studios?: Array<{ mal_id: number; name: string }>;
+  producers?: Array<{ mal_id: number; name: string }>;
+  staff?: AnimeStaffItem[];
+  characters?: AnimeCharacterItem[];
+  themes?: AnimeThemeSongs;
+}
+
 export interface WatchHistoryItem {
   anime_slug: string;
   anime_title: string;

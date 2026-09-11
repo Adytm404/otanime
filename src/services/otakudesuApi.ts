@@ -4,6 +4,7 @@ import {
   PagedGenreAnimeData,
   AnimeItem,
   AnimeDetail,
+  AnimeExtraInfo,
   EpisodeDetail
 } from '../types/anime';
 
@@ -53,6 +54,10 @@ export async function fetchAnimeByGenre(genreSlug: string, page: number = 1): Pr
 
 export async function fetchAnimeDetail(slug: string): Promise<AnimeDetail> {
   return await fetchJson<AnimeDetail>(`/anime/${slug}`);
+}
+
+export async function fetchAnimeExtra(slug: string): Promise<AnimeExtraInfo> {
+  return await fetchJson<AnimeExtraInfo>(`/anime/${slug}/extra`);
 }
 
 export async function fetchEpisodeDetail(slug: string): Promise<EpisodeDetail> {

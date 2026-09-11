@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { fetchAnimeDetail, fetchAnimeByGenre } from '../services/otakudesuApi';
-import { AnimeDetail, AnimeItem, WatchHistoryItem } from '../types/anime';
+import { fetchAnimeDetail, fetchAnimeByGenre, fetchAnimeExtra } from '../services/otakudesuApi';
+import { AnimeDetail, AnimeItem, AnimeExtraInfo, WatchHistoryItem } from '../types/anime';
 import { AnimeCard } from '../components/AnimeCard';
 import { parseEpisodeInfo } from '../utils/formatters';
 import {
@@ -18,7 +18,11 @@ import {
   Search,
   Download,
   Building2,
-  RefreshCw
+  RefreshCw,
+  Video,
+  Users,
+  Music,
+  X
 } from 'lucide-react';
 
 interface AnimeDetailPageProps {
@@ -37,19 +41,24 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
   const navigate = useNavigate();
 
   const [anime, setAnime] = useState<AnimeDetail | null>(null);
+  const [extraInfo, setExtraInfo] = useState<AnimeExtraInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingExtra, setLoadingExtra] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [episodeSearch, setEpisodeSearch] = useState('');
   const [showFullSynopsis, setShowFullSynopsis] = useState(false);
   const [similarAnime, setSimilarAnime] = useState<AnimeItem[]>([]);
   const [loadingSimilar, setLoadingSimilar] = useState<boolean>(false);
+  const [showTrailerModal, setShowTrailerModal] = useState<boolean>(false);
 
   const loadData = () => {
     if (!slug) return;
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setLoading(true);
+    setLoadingExtra(true);
     setError(null);
+    setExtraInfo(null);
 
     fetchAnimeDetail(slug)
       .then((data) => {
@@ -60,6 +69,17 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
         console.error('Failed fetching anime detail:', err);
         setError(err.message || 'Gagal memuat data anime');
         setLoading(false);
+      });
+
+    fetchAnimeExtra(slug)
+      .then((extra) => {
+        setExtraInfo(extra);
+      })
+      .catch((err) => {
+        console.warn('Failed fetching anime extra details:', err);
+      })
+      .finally(() => {
+        setLoadingExtra(false);
       });
   };
 
@@ -364,6 +384,23 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
                   {anime.producer}
                 </span>
               )}
+              {extraInfo?.score && (
+                <span className="px-3 py-1 rounded-full bg-amber-400/15 border border-amber-400/30 text-amber-300 font-bold flex items-center gap-1.5">
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  <span>{extraInfo.score} (MAL)</span>
+                </span>
+              )}
+              {extraInfo?.rank && (
+                <span className="px-3 py-1 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 font-medium">
+                  Rank #{extraInfo.rank}
+                </span>
+              )}
+              {loadingExtra && (
+                <span className="px-3 py-1 rounded-full bg-white/5 border border-white/5 text-[11px] text-white/40 flex items-center gap-1.5 animate-pulse">
+                  <div className="w-2.5 h-2.5 rounded-full border border-white/30 border-t-white animate-spin" />
+                  <span>Memuat info MAL...</span>
+                </span>
+              )}
             </div>
 
             {/* Watch Action Buttons */}
@@ -385,6 +422,16 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
                 >
                   <span>Mulai dari {parseEpisodeInfo(earliestEpisode.title, earliestEpisode.slug).epNumber}</span>
                 </Link>
+              )}
+
+              {extraInfo?.trailer?.embed_url && (
+                <button
+                  onClick={() => setShowTrailerModal(true)}
+                  className="flex items-center gap-2 px-5 sm:px-6 py-3 rounded-full bg-rose-600/90 hover:bg-rose-500 text-white font-bold text-xs sm:text-sm active:scale-95 transition-all shadow-md shadow-rose-600/25"
+                >
+                  <Video className="w-4 h-4" />
+                  <span>Trailer Resmi</span>
+                </button>
               )}
             </div>
 
@@ -544,6 +591,174 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
           )}
         </section>
 
+        {/* Characters & Voice Actors Section from Jikan/MAL */}
+        {extraInfo?.characters && extraInfo.characters.length > 0 && (
+          <section className="mt-12 sm:mt-16 pt-8 border-t border-white/10">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2.5">
+                <Users className="w-5 h-5 text-rose-500" />
+                <span>Karakter & Pengisi Suara (Seiyuu)</span>
+                <span className="text-sm font-normal text-white/40">
+                  ({extraInfo.characters.length})
+                </span>
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              {extraInfo.characters.map((item, idx) => (
+                <div
+                  key={`char-${idx}-${item.character.name}`}
+                  className="p-3 rounded-2xl bg-white/[0.04] border border-white/5 flex items-center justify-between gap-3 card-content-visibility"
+                >
+                  {/* Character Avatar & Name */}
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div className="w-11 h-14 rounded-xl overflow-hidden bg-black/50 flex-shrink-0">
+                      {item.character.image ? (
+                        <img
+                          src={item.character.image}
+                          alt={item.character.name}
+                          loading="lazy"
+                          decoding="async"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-white/20 text-xs">?</div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-xs font-bold text-white/95 truncate" title={item.character.name}>
+                        {item.character.name}
+                      </h4>
+                      <span className="text-[10px] text-rose-400 block font-medium mt-0.5">
+                        {item.character.role}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Voice Actor (Seiyuu) Avatar & Name */}
+                  {item.voice_actor && (
+                    <div className="flex items-center gap-2 text-right min-w-0 flex-1 justify-end border-l border-white/5 pl-2.5">
+                      <div className="min-w-0 flex-1">
+                        <h5 className="text-xs font-medium text-white/80 truncate" title={item.voice_actor.name}>
+                          {item.voice_actor.name}
+                        </h5>
+                        <span className="text-[10px] text-white/40 block mt-0.5">
+                          {item.voice_actor.language}
+                        </span>
+                      </div>
+                      <div className="w-11 h-14 rounded-xl overflow-hidden bg-black/50 flex-shrink-0">
+                        {item.voice_actor.image ? (
+                          <img
+                            src={item.voice_actor.image}
+                            alt={item.voice_actor.name}
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-white/20 text-xs">?</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Production Staff Section from Jikan/MAL */}
+        {extraInfo?.staff && extraInfo.staff.length > 0 && (
+          <section className="mt-12 sm:mt-16 pt-8 border-t border-white/10">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2.5">
+                <Building2 className="w-5 h-5 text-indigo-400" />
+                <span>Staf & Tim Produksi</span>
+                <span className="text-sm font-normal text-white/40">
+                  ({extraInfo.staff.length})
+                </span>
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+              {extraInfo.staff.map((person, idx) => (
+                <div
+                  key={`staff-${idx}-${person.name}`}
+                  className="p-3 rounded-2xl bg-white/[0.04] border border-white/5 flex items-center gap-3 card-content-visibility"
+                >
+                  <div className="w-11 h-14 rounded-xl overflow-hidden bg-black/50 flex-shrink-0">
+                    {person.image ? (
+                      <img
+                        src={person.image}
+                        alt={person.name}
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-white/20 text-xs">?</div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-xs font-bold text-white/95 truncate" title={person.name}>
+                      {person.name}
+                    </h4>
+                    <p className="text-[10px] text-indigo-300 truncate mt-0.5" title={person.role}>
+                      {person.role}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Theme Songs / OST Section */}
+        {extraInfo?.themes && (extraInfo.themes.openings.length > 0 || extraInfo.themes.endings.length > 0) && (
+          <section className="mt-12 sm:mt-16 pt-8 border-t border-white/10">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2.5">
+                <Music className="w-5 h-5 text-amber-400" />
+                <span>Lagu Tema (Opening & Ending)</span>
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {extraInfo.themes.openings.length > 0 && (
+                <div className="p-4 sm:p-5 rounded-2xl bg-white/[0.03] border border-white/5 space-y-2.5">
+                  <span className="text-xs font-bold text-amber-400 uppercase tracking-wider block">
+                    Opening Themes
+                  </span>
+                  <div className="space-y-1.5">
+                    {extraInfo.themes.openings.map((op, idx) => (
+                      <div key={`op-${idx}`} className="text-xs text-white/80 flex items-start gap-2">
+                        <span className="text-white/30 flex-shrink-0">{idx + 1}.</span>
+                        <span className="leading-relaxed">{op}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {extraInfo.themes.endings.length > 0 && (
+                <div className="p-4 sm:p-5 rounded-2xl bg-white/[0.03] border border-white/5 space-y-2.5">
+                  <span className="text-xs font-bold text-rose-400 uppercase tracking-wider block">
+                    Ending Themes
+                  </span>
+                  <div className="space-y-1.5">
+                    {extraInfo.themes.endings.map((ed, idx) => (
+                      <div key={`ed-${idx}`} className="text-xs text-white/80 flex items-start gap-2">
+                        <span className="text-white/30 flex-shrink-0">{idx + 1}.</span>
+                        <span className="leading-relaxed">{ed}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
         {/* Similar Recommendations Section (sharing at least 3 genres, default 6 items) */}
         {(similarAnime.length > 0 || (anime.recommendations && anime.recommendations.length > 0)) && (
           <section className="mt-14 pt-8 border-t border-white/10">
@@ -582,6 +797,37 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
           </section>
         )}
       </div>
+
+      {/* Official Trailer Modal */}
+      {showTrailerModal && extraInfo?.trailer?.embed_url && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="fixed inset-0" onClick={() => setShowTrailerModal(false)} />
+          <div className="relative w-full max-w-4xl bg-[#17171d] border border-white/10 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl z-10 my-auto">
+            <div className="p-4 sm:p-5 border-b border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <Video className="w-5 h-5 text-rose-500" />
+                <span className="font-bold text-sm sm:text-base text-white">Trailer Resmi: {anime.title}</span>
+              </div>
+              <button
+                onClick={() => setShowTrailerModal(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/80 hover:text-white transition-colors"
+                aria-label="Tutup modal trailer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="relative w-full aspect-video bg-black">
+              <iframe
+                src={extraInfo.trailer.embed_url}
+                title={`${anime.title} Official Trailer`}
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

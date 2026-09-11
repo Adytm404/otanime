@@ -48,6 +48,7 @@ app.get('/', (c) => {
       genres: 'GET /api/genres',
       genre_anime: 'GET /api/genres/:slug?page=1',
       anime_detail: 'GET /api/anime/:slug',
+      anime_extra: 'GET /api/anime/:slug/extra',
       episode_detail: 'GET /api/episode/:slug',
       resolve_mirror: 'POST /api/episode/resolve-mirror',
       resolve_download: 'GET /api/episode/resolve-download?url=:url',

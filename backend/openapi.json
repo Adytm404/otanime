@@ -300,6 +300,39 @@
         }
       }
     },
+    "/api/anime/{slug}/extra": {
+      "get": {
+        "tags": ["Detail & Episode"],
+        "summary": "Metadata ekstra dari Jikan/MAL (Trailer, Staf, Karakter/Seiyuu, OST)",
+        "description": "Mengambil official trailer embed, daftar staf produksi, seiyuu / voice actor, dan lagu tema (opening/ending) melalui integrasi Jikan API dan MyAnimeList.",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "description": "Slug anime (contoh: otome-game-mob-s2-sub-indo)",
+            "schema": { "type": "string", "example": "otome-game-mob-s2-sub-indo" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Data ekstra anime",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "cached": { "type": "boolean", "example": false },
+                    "data": { "type": "object" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/episode/{slug}": {
       "get": {
         "tags": ["Detail & Episode"],
