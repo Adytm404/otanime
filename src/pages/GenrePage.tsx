@@ -24,7 +24,7 @@ export const GenrePage: React.FC = () => {
 
   // Selected genres state (set of slugs, e.g. ['action', 'fantasy'])
   const [selectedSlugs, setSelectedSlugs] = useState<string[]>(() => {
-    return genreSlug ? [genreSlug] : ['action'];
+    return genreSlug ? [genreSlug] : [];
   });
 
   // Anime results state
@@ -50,10 +50,6 @@ export const GenrePage: React.FC = () => {
       .then((data) => {
         if (data && data.length > 0) {
           setAllGenres(data);
-          // If no genre selected, select first genre by default
-          if (selectedSlugs.length === 0) {
-            setSelectedSlugs([data[0].slug]);
-          }
         }
       })
       .catch((err) => console.error('Failed fetching genre list:', err))
@@ -134,11 +130,7 @@ export const GenrePage: React.FC = () => {
   };
 
   const resetSelection = () => {
-    if (allGenres.length > 0) {
-      setSelectedSlugs([allGenres[0].slug]);
-    } else {
-      setSelectedSlugs([]);
-    }
+    setSelectedSlugs([]);
   };
 
   // MULTI-GENRE FILTER:
@@ -218,7 +210,7 @@ export const GenrePage: React.FC = () => {
               </span>
             </div>
 
-            {selectedSlugs.length > 1 && (
+            {selectedSlugs.length > 0 && (
               <button
                 onClick={resetSelection}
                 className="px-3.5 py-2 rounded-2xl bg-white/10 hover:bg-white/15 text-xs text-white/80 hover:text-white transition-colors flex items-center gap-1.5"
@@ -369,6 +361,18 @@ export const GenrePage: React.FC = () => {
                   )}
                 </div>
               ))}
+            </div>
+          ) : selectedSlugs.length === 0 ? (
+            <div className="py-20 text-center text-white/40 space-y-3 bg-[#17171d]/50 rounded-3xl border border-white/5">
+              <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-white/40 mb-2">
+                <Filter className="w-5 h-5 text-rose-500" />
+              </div>
+              <p className="text-base sm:text-lg font-semibold text-white/80">
+                Belum Ada Genre yang Dipilih
+              </p>
+              <p className="text-xs text-white/40 max-w-md mx-auto">
+                Silakan pilih satu atau beberapa genre pada daftar di atas untuk menampilkan anime yang sesuai.
+              </p>
             </div>
           ) : !loadingAnime ? (
             <div className="py-20 text-center text-white/40 space-y-3 bg-[#17171d]/50 rounded-3xl border border-white/5">
