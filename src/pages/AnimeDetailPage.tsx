@@ -240,21 +240,22 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
   return (
     <div className="min-h-screen bg-[#121214] text-white selection:bg-white selection:text-black">
       {/* Hero Backdrop with Gradient Overlay */}
-      <div className="relative w-full h-[50vh] sm:h-[60vh] max-h-[580px] overflow-hidden">
+      <div className="relative w-full h-[50vh] sm:h-[60vh] max-h-[580px] overflow-hidden pointer-events-none">
         <img
           src={anime.poster}
           alt={anime.title}
-          className="w-full h-full object-cover object-center scale-110 filter blur-[2px] opacity-70"
+          decoding="async"
+          className="w-full h-full object-cover object-center opacity-65 sm:scale-105 sm:filter sm:blur-[1px]"
         />
         {/* Gradients */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#121214] via-[#121214]/75 to-black/70" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#121214] via-[#121214]/60 to-transparent" />
 
         {/* Top Floating Back Button */}
-        <div className="absolute top-20 sm:top-24 left-4 sm:left-6 lg:left-10 z-20">
+        <div className="absolute top-20 sm:top-24 left-4 sm:left-6 lg:left-10 z-20 pointer-events-auto">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/10 text-xs sm:text-sm text-white/80 hover:text-white transition-all shadow-lg"
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/80 hover:bg-black/95 sm:backdrop-blur-md border border-white/10 text-xs sm:text-sm text-white/80 hover:text-white transition-colors shadow-md"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Kembali</span>
@@ -267,14 +268,15 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
         <div className="flex flex-col md:flex-row items-center md:items-start gap-6 sm:gap-8 lg:gap-10">
           {/* Left Column: Poster Image + Actions */}
           <div className="flex-shrink-0 w-48 sm:w-56 md:w-64 lg:w-72 flex flex-col items-center">
-            <div className="relative w-full aspect-[2/3] rounded-2xl overflow-hidden bg-[#1a1a20] border border-white/10 shadow-2xl shadow-black/80">
+            <div className="relative w-full aspect-[2/3] rounded-2xl overflow-hidden bg-[#1a1a20] border border-white/10 shadow-xl shadow-black/80">
               <img
                 src={anime.poster}
                 alt={anime.title}
+                decoding="async"
                 className="w-full h-full object-cover"
               />
               {anime.score && (
-                <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-black/75 backdrop-blur-md border border-white/10 flex items-center gap-1.5 text-xs font-bold text-amber-400 shadow">
+                <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-black/85 sm:backdrop-blur-md border border-white/10 flex items-center gap-1.5 text-xs font-bold text-amber-400 shadow">
                   <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                   <span>{anime.score}</span>
                 </div>
@@ -474,14 +476,16 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
                   <Link
                     key={`ep-${ep.slug}`}
                     to={`/anime/${slug}/${ep.slug}`}
-                    className="group p-3 sm:p-3.5 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 hover:border-white/20 transition-all flex items-center gap-3 sm:gap-4 relative"
+                    className="group p-3 sm:p-3.5 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 hover:border-white/20 transition-colors flex items-center gap-3 sm:gap-4 relative card-content-visibility"
                   >
                     {/* Episode Icon Preview */}
                     <div className="relative w-16 sm:w-20 aspect-video rounded-xl overflow-hidden bg-black/50 flex-shrink-0 flex items-center justify-center">
                       <img
                         src={anime.poster}
                         alt={ep.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-60"
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full h-full object-cover sm:group-hover:scale-105 transition-transform duration-200 opacity-60"
                       />
                       <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                         <div className="w-6 h-6 rounded-full bg-white text-black flex items-center justify-center shadow">

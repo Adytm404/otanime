@@ -88,13 +88,17 @@ const AppContent: React.FC = () => {
     }
   }, [myList]);
 
-  // Sync Watch History to LocalStorage
+  // Sync Watch History to LocalStorage (debounced to avoid blocking main thread during playback)
   useEffect(() => {
-    try {
-      localStorage.setItem('otanime_watch_history', JSON.stringify(watchHistory));
-    } catch (e) {
-      console.error(e);
-    }
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem('otanime_watch_history', JSON.stringify(watchHistory));
+      } catch (e) {
+        console.error(e);
+      }
+    }, 1500);
+
+    return () => clearTimeout(timer);
   }, [watchHistory]);
 
   const toggleFavorite = (anime: AnimeItem) => {

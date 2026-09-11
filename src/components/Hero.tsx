@@ -43,11 +43,13 @@ export const Hero: React.FC<HeroProps> = ({
   return (
     <section className="relative w-full h-[70vh] sm:h-[78vh] md:h-[84vh] lg:h-[88vh] min-h-[520px] max-h-[920px] flex items-center overflow-hidden">
       {/* Background Image Container */}
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <img
           src={imageSrc}
           alt={anime.title}
-          className="w-full h-full object-cover object-[center_25%] scale-105 filter blur-[0.5px] transform transition-transform duration-1000 ease-out"
+          decoding="async"
+          fetchPriority="high"
+          className="w-full h-full object-cover object-[center_25%]"
         />
 
         {/* Cinematic Vignette & Gradient Overlays */}
@@ -61,7 +63,7 @@ export const Hero: React.FC<HeroProps> = ({
         <div className="max-w-2xl space-y-3 sm:space-y-4">
           {/* Badge */}
           {anime.current_episode && (
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-600/30 border border-rose-500/40 text-rose-300 text-xs font-semibold backdrop-blur-md">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-600/30 border border-rose-500/40 text-rose-300 text-xs font-semibold sm:backdrop-blur-md">
               <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
               <span>Update Terbaru • {anime.current_episode}</span>
             </div>
@@ -82,7 +84,7 @@ export const Hero: React.FC<HeroProps> = ({
             {/* Play Button */}
             <button
               onClick={() => onPlay(anime.slug)}
-              className="flex items-center gap-2 px-6 sm:px-7 py-2.5 sm:py-3 rounded-full bg-white text-black font-semibold text-xs sm:text-sm hover:bg-white/90 active:scale-95 transition-all shadow-lg shadow-black/30 group"
+              className="flex items-center gap-2 px-6 sm:px-7 py-2.5 sm:py-3 rounded-full bg-white text-black font-semibold text-xs sm:text-sm hover:bg-white/90 active:scale-95 transition-transform shadow-md shadow-black/30 group"
             >
               <Play className="w-4 h-4 fill-black text-black transition-transform group-hover:scale-110" />
               <span>Nonton Sekarang</span>
@@ -91,7 +93,7 @@ export const Hero: React.FC<HeroProps> = ({
             {/* More Info Button */}
             <button
               onClick={() => onMoreInfo(anime.slug)}
-              className="flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 text-white font-medium text-xs sm:text-sm backdrop-blur-md border border-white/10 transition-all"
+              className="flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 text-white font-medium text-xs sm:text-sm sm:backdrop-blur-md border border-white/10 transition-colors"
             >
               <Info className="w-4 h-4 opacity-90" />
               <span>Detail Anime</span>

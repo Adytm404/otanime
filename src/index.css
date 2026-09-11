@@ -12,7 +12,14 @@
     color: #ffffff;
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
   }
+}
+
+/* Enable hardware-accelerated smooth touch scrolling on mobile */
+.overflow-x-auto,
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Hide scrollbar for clean horizontal carousel */
@@ -38,4 +45,40 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.25);
+}
+
+/* Performance: Skip rendering off-screen anime cards in long lists */
+.card-content-visibility {
+  content-visibility: auto;
+  contain-intrinsic-size: 160px 240px;
+}
+
+/* Mobile performance tuning: disable expensive effects and hover traps on touch devices */
+@media (hover: none) and (pointer: coarse) {
+  /* Disable hover transform scales on touch devices to avoid layout re-rasterization */
+  .group:hover .group-hover\:scale-105,
+  .group:hover .group-hover\:scale-100 {
+    transform: none !important;
+  }
+
+  /* Simplify box-shadows on mobile to reduce compositing GPU load */
+  .shadow-2xl {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* On mobile, fallback backdrop-filter to solid dark backgrounds for 60fps scrolling */
+  .backdrop-blur-md,
+  .backdrop-blur-xl {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background-color: rgba(18, 18, 20, 0.96) !important;
+  }
+
+  .backdrop-blur-sm {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background-color: rgba(0, 0, 0, 0.85) !important;
+  }
 }

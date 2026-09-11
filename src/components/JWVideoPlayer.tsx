@@ -241,9 +241,9 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
         setBuffered((v.buffered.end(v.buffered.length - 1) / (v.duration || 1)) * 100);
       }
 
-      // Throttle progress reporting every 2.5 seconds
+      // Throttle progress reporting every 8 seconds during continuous playback
       const now = Date.now();
-      if (now - lastProgressReportRef.current > 2500) {
+      if (now - lastProgressReportRef.current > 8000) {
         lastProgressReportRef.current = now;
         if (onProgressRef.current && v.duration > 0) {
           onProgressRef.current(v.currentTime, v.duration);

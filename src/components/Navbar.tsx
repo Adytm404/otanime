@@ -30,10 +30,19 @@ export const Navbar: React.FC<NavbarProps> = ({
   const recentAnime = latestReleases.slice(0, 5);
 
   useEffect(() => {
+    let ticking = false;
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 40);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const shouldScroll = window.scrollY > 40;
+          setIsScrolled((prev) => (prev !== shouldScroll ? shouldScroll : prev));
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
-    window.addEventListener('scroll', handleScroll);
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -64,10 +73,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-40 transition-colors duration-200 py-3 sm:py-4 ${
         isScrolled
-          ? 'bg-[#121214]/90 backdrop-blur-md shadow-lg shadow-black/40 py-3'
-          : 'bg-gradient-to-b from-black/80 via-black/40 to-transparent py-4 sm:py-5'
+          ? 'bg-[#121214]/95 shadow-lg shadow-black/40'
+          : 'bg-gradient-to-b from-black/80 via-black/30 to-transparent'
       }`}
     >
       <div className="max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-10 flex items-center justify-between gap-3 sm:gap-6">
@@ -247,7 +256,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Navigation Drawer */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-[#16161b]/98 backdrop-blur-xl border-b border-white/10 px-6 py-4 space-y-3 animate-in fade-in slide-in-from-top-4 duration-200">
+        <div className="md:hidden bg-[#16161b] border-b border-white/10 px-6 py-4 space-y-3 animate-in fade-in slide-in-from-top-4 duration-200 shadow-2xl">
           {navItems.map((item) => {
             const active = currentTab === item.tab;
             return (

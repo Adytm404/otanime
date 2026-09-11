@@ -36,7 +36,7 @@ export const AnimeSection: React.FC<AnimeSectionProps> = ({
     checkScroll();
     const el = scrollRef.current;
     if (!el) return;
-    el.addEventListener('scroll', checkScroll);
+    el.addEventListener('scroll', checkScroll, { passive: true });
     return () => el.removeEventListener('scroll', checkScroll);
   }, [items]);
 
@@ -102,7 +102,7 @@ export const AnimeSection: React.FC<AnimeSectionProps> = ({
       {/* Horizontal Carousel Row */}
       <div
         ref={scrollRef}
-        className="flex items-start gap-3 sm:gap-4 md:gap-5 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory py-1"
+        className="flex items-start gap-3 sm:gap-4 md:gap-5 overflow-x-auto no-scrollbar sm:scroll-smooth sm:snap-x sm:snap-mandatory py-1"
       >
         {historyItems
           ? historyItems.map((h) => (

@@ -187,7 +187,7 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
 
     const timer = setInterval(() => {
       if (document.hidden) return;
-      elapsed += 4;
+      elapsed += 10;
       const pct = Math.min(95, Math.max(10, Math.round((elapsed / totalDuration) * 100)));
       onSaveHistory({
         anime_slug: animeSlug,
@@ -199,7 +199,7 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
         currentTime: elapsed,
         duration: totalDuration
       });
-    }, 4000);
+    }, 10000);
 
     return () => clearInterval(timer);
   }, [playerMode, anime?.title, episode?.title, animeSlug, episodeSlugParam]);

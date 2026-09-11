@@ -46,26 +46,27 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({
   return (
     <div
       onClick={handleCardClick}
-      className="group cursor-pointer flex flex-col flex-shrink-0 w-[136px] sm:w-[160px] md:w-[180px] lg:w-[204px] transition-transform duration-300"
+      className="group cursor-pointer flex flex-col flex-shrink-0 w-[136px] sm:w-[160px] md:w-[180px] lg:w-[204px] card-content-visibility select-none"
     >
       {/* Poster Container */}
-      <div className="relative w-full aspect-[2/3] rounded-xl sm:rounded-2xl overflow-hidden bg-[#1a1a20] border border-white/5 shadow-md group-hover:shadow-xl group-hover:shadow-black/50 group-hover:border-white/20 transition-all duration-300">
+      <div className="relative w-full aspect-[2/3] rounded-xl sm:rounded-2xl overflow-hidden bg-[#1a1a20] border border-white/5 shadow-md sm:group-hover:shadow-xl sm:group-hover:shadow-black/50 sm:group-hover:border-white/20 transition-colors duration-200">
         <img
           src={anime.thumb}
           alt={anime.title}
           loading="lazy"
-          className="w-full h-full object-cover object-center transform transition-transform duration-500 group-hover:scale-105"
+          decoding="async"
+          className="w-full h-full object-cover object-center sm:transform sm:transition-transform sm:duration-300 sm:group-hover:scale-105"
           onError={(e) => {
             (e.target as HTMLImageElement).src =
               "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&auto=format&fit=crop&q=80";
           }}
         />
 
-        {/* Hover Gradient & Quick Play Action */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+        {/* Hover Gradient & Quick Play Action (Desktop only) */}
+        <div className="hidden sm:flex absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 items-center justify-center">
           <button
             onClick={handlePlayClick}
-            className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white/95 text-black flex items-center justify-center shadow-lg transform scale-75 group-hover:scale-100 hover:scale-110 active:scale-95 transition-all duration-200"
+            className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white/95 text-black flex items-center justify-center shadow-lg transform scale-75 group-hover:scale-100 hover:scale-110 active:scale-95 transition-transform duration-200"
             title={`Watch ${anime.title}`}
           >
             <Play className="w-5 h-5 fill-black text-black ml-0.5" />
@@ -74,8 +75,8 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({
 
         {/* Badge (e.g. "Episode 12" / "12 Episode") */}
         {displayBadge && (
-          <div className="absolute top-2.5 right-2.5 z-10 max-w-[80%]">
-            <span className="block truncate px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-black/75 backdrop-blur-md border border-white/15 text-[10px] sm:text-xs font-semibold text-white/90 shadow">
+          <div className="absolute top-2.5 right-2.5 z-10 max-w-[80%] pointer-events-none">
+            <span className="block truncate px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-black/85 sm:backdrop-blur-md border border-white/15 text-[10px] sm:text-xs font-semibold text-white/90 shadow">
               {displayBadge}
             </span>
           </div>
@@ -83,8 +84,8 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({
 
         {/* Rating score badge if available */}
         {anime.rating && (
-          <div className="absolute top-2.5 left-2.5 z-10">
-            <span className="px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-md text-[10px] font-bold text-amber-400 border border-white/10 flex items-center gap-1 shadow">
+          <div className="absolute top-2.5 left-2.5 z-10 pointer-events-none">
+            <span className="px-2 py-0.5 rounded-md bg-black/85 sm:backdrop-blur-md text-[10px] font-bold text-amber-400 border border-white/10 flex items-center gap-1 shadow">
               <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
               <span>{anime.rating}</span>
             </span>
@@ -93,9 +94,9 @@ export const AnimeCard: React.FC<AnimeCardProps> = ({
 
         {/* Progress Bar for "Continue Watching" */}
         {showProgress && (
-          <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-black/60 backdrop-blur-sm z-10 overflow-hidden">
+          <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-black/80 z-10 overflow-hidden">
             <div
-              className="h-full bg-rose-600 rounded-r-full shadow-sm shadow-rose-500 transition-all duration-300"
+              className="h-full bg-rose-600 rounded-r-full shadow-sm shadow-rose-500"
               style={{ width: `${Math.max(4, Math.min(100, progress))}%` }}
             />
           </div>
