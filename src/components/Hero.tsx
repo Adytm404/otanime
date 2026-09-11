@@ -16,6 +16,15 @@ interface TrailerCache {
   status: 'loading' | 'loaded' | 'none';
 }
 
+function extractYouTubeId(urlOrId?: string | null): string | null {
+  if (!urlOrId) return null;
+  if (/^[a-zA-Z0-9_-]{11}$/.test(urlOrId)) return urlOrId;
+  const match =
+    urlOrId.match(/(?:embed\/|v=|vi\/|youtu\.be\/|\/v\/|\/e\/|watch\?v=|\/shorts\/)([a-zA-Z0-9_-]{11})/i) ||
+    urlOrId.match(/embed\/([a-zA-Z0-9_-]+)/i);
+  return match ? match[1] : null;
+}
+
 export const Hero: React.FC<HeroProps> = ({
   items,
   onPlay,
@@ -33,6 +42,7 @@ export const Hero: React.FC<HeroProps> = ({
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const isHoveredRef = useRef(false);
+  const loadingSlugsRef = useRef<Set<string>>(new Set());
   isHoveredRef.current = isHovered;
 
   const activeItem = featuredItems[currentIndex] || null;
@@ -59,17 +69,28 @@ export const Hero: React.FC<HeroProps> = ({
 
   // Load official trailer for current and next anime
   const loadTrailer = useCallback(async (slug: string) => {
-    if (!slug || trailers[slug]) return;
+    if (!slug || loadingSlugsRef.current.has(slug)) return;
+    loadingSlugsRef.current.add(slug);
 
     try {
       const extra = await fetchAnimeExtra(slug);
-      const youtubeId = extra?.trailer?.youtube_id;
+      const ytId =
+        extra?.trailer?.youtube_id ||
+        extractYouTubeId(extra?.trailer?.embed_url) ||
+        extractYouTubeId(extra?.trailer?.url);
 
-      if (youtubeId) {
-        const embedUrl = `https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${youtubeId}&playsinline=1&enablejsapi=1&rel=0&iv_load_policy=3&showinfo=0&modestbranding=1`;
+      if (ytId) {
+        const embedUrl = `https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${ytId}&playsinline=1&enablejsapi=1&rel=0&iv_load_policy=3&showinfo=0&modestbranding=1`;
         setTrailers((prev) => ({
           ...prev,
-          [slug]: { youtubeId, embedUrl, status: 'loaded' }
+          [slug]: { youtubeId: ytId, embedUrl, status: 'loaded' }
+        }));
+      } else if (extra?.trailer?.embed_url) {
+        const sep = extra.trailer.embed_url.includes('?') ? '&' : '?';
+        const embedUrl = `${extra.trailer.embed_url}${sep}autoplay=1&mute=1&controls=0&loop=1&playsinline=1&enablejsapi=1&rel=0&iv_load_policy=3&showinfo=0&modestbranding=1`;
+        setTrailers((prev) => ({
+          ...prev,
+          [slug]: { youtubeId: '', embedUrl, status: 'loaded' }
         }));
       } else {
         setTrailers((prev) => ({
@@ -83,7 +104,7 @@ export const Hero: React.FC<HeroProps> = ({
         [slug]: { youtubeId: '', embedUrl: '', status: 'none' }
       }));
     }
-  }, [trailers]);
+  }, []);
 
   useEffect(() => {
     if (activeItem?.slug) {

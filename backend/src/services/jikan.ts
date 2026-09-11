@@ -46,6 +46,15 @@ export interface AnimeExtraInfo {
   themes?: AnimeThemeSongs;
 }
 
+function extractYouTubeId(urlOrId?: string | null): string | null {
+  if (!urlOrId) return null;
+  if (/^[a-zA-Z0-9_-]{11}$/.test(urlOrId)) return urlOrId;
+  const match =
+    urlOrId.match(/(?:embed\/|v=|vi\/|youtu\.be\/|\/v\/|\/e\/|watch\?v=|\/shorts\/)([a-zA-Z0-9_-]{11})/i) ||
+    urlOrId.match(/embed\/([a-zA-Z0-9_-]+)/i);
+  return match ? match[1] : null;
+}
+
 function cleanTitle(title: string): string {
   return title
     .replace(/Subtitle\s+Indonesia.*/i, '')
@@ -63,6 +72,7 @@ function cleanTitle(title: string): string {
 async function resolveMalId(title: string, japaneseTitle?: string): Promise<{ malId: string | null; youtubeVideoId?: string | null }> {
   const queries = [japaneseTitle, cleanTitle(title), title].filter(Boolean) as string[];
 
+  // 1. Try Kitsu text search with external mappings
   for (const q of queries) {
     try {
       const url = `https://kitsu.io/api/edge/anime?filter[text]=${encodeURIComponent(q)}&include=mappings&page[limit]=1`;
@@ -85,6 +95,26 @@ async function resolveMalId(title: string, japaneseTitle?: string): Promise<{ ma
       }
     } catch (e) {
       console.warn(`Error searching Kitsu for query "${q}":`, e);
+    }
+  }
+
+  // 2. Fallback: query MyAnimeList directly if Kitsu had no MAL mapping
+  for (const q of queries) {
+    try {
+      const malSearchUrl = `https://myanimelist.net/anime.php?q=${encodeURIComponent(q)}`;
+      const res = await fetch(malSearchUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+      });
+      if (!res.ok) continue;
+      const html = await res.text();
+      const match = html.match(/https:\/\/myanimelist\.net\/anime\/(\d+)/);
+      if (match && match[1]) {
+        return { malId: match[1], youtubeVideoId: null };
+      }
+    } catch (e) {
+      console.warn(`Error searching MAL directly for query "${q}":`, e);
     }
   }
 
@@ -205,12 +235,23 @@ export async function getAnimeExtraDetails(detail: AnimeDetail): Promise<AnimeEx
         extra.rank = typeof d.rank === 'number' ? d.rank : null;
         extra.popularity = typeof d.popularity === 'number' ? d.popularity : null;
 
-        if (d.trailer?.embed_url || d.trailer?.youtube_id) {
+        if (d.trailer?.embed_url || d.trailer?.youtube_id || d.trailer?.url || youtubeVideoId) {
+          const ytId =
+            d.trailer?.youtube_id ||
+            extractYouTubeId(d.trailer?.embed_url) ||
+            extractYouTubeId(d.trailer?.url) ||
+            youtubeVideoId ||
+            null;
+
+          const embedUrl =
+            d.trailer?.embed_url ||
+            (ytId ? `https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1` : null);
+
           extra.trailer = {
-            youtube_id: d.trailer.youtube_id || youtubeVideoId || null,
-            url: d.trailer.url || (d.trailer.youtube_id ? `https://www.youtube.com/watch?v=${d.trailer.youtube_id}` : null),
-            embed_url: d.trailer.embed_url || (d.trailer.youtube_id ? `https://www.youtube-nocookie.com/embed/${d.trailer.youtube_id}?autoplay=1` : null),
-            image_url: d.trailer.images?.maximum_image_url || d.trailer.images?.large_image_url || null
+            youtube_id: ytId,
+            url: d.trailer?.url || (ytId ? `https://www.youtube.com/watch?v=${ytId}` : null),
+            embed_url: embedUrl,
+            image_url: d.trailer?.images?.maximum_image_url || d.trailer?.images?.large_image_url || null
           };
         }
 
