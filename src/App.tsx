@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { HomePage } from './pages/HomePage';
 import { GenrePage } from './pages/GenrePage';
@@ -12,6 +12,7 @@ import { AnimeItem, WatchHistoryItem, NavTab } from './types/anime';
 import { ExternalLink, Activity, X, CheckCircle2, Server } from 'lucide-react';
 
 const AppContent: React.FC = () => {
+  const navigate = useNavigate();
   const location = useLocation();
 
   const [currentTab, setCurrentTab] = useState<NavTab>('home');
@@ -180,6 +181,20 @@ const AppContent: React.FC = () => {
     return () => clearTimeout(timeout);
   }, [searchQuery]);
 
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
+    if (query.trim().length > 0 && location.pathname !== '/') {
+      navigate('/');
+    }
+  };
+
+  const handleSearchSubmit = (query: string) => {
+    setSearchQuery(query);
+    if (query.trim().length > 0 && location.pathname !== '/') {
+      navigate('/');
+    }
+  };
+
   const handleTabChange = (tab: NavTab) => {
     setCurrentTab(tab);
     setSearchQuery('');
@@ -192,7 +207,8 @@ const AppContent: React.FC = () => {
         currentTab={currentTab}
         onTabChange={handleTabChange}
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={handleSearchChange}
+        onSearchSubmit={handleSearchSubmit}
         myListCount={myList.length}
         latestReleases={ongoingList}
       />
@@ -213,6 +229,7 @@ const AppContent: React.FC = () => {
                 loading={apiLoading}
                 error={apiError}
                 onRefresh={loadHomeData}
+                onClearSearch={() => setSearchQuery('')}
               />
             }
           />
@@ -267,7 +284,7 @@ const AppContent: React.FC = () => {
           <p>© 2026 Otanime • Data provided by Otakudesu</p>
           <div className="flex items-center gap-5">
             <a
-              href="/docs"
+              href="https://otanime.webkulo.com/docs"
               target="_blank"
               rel="noreferrer"
               className="hover:text-white transition-colors flex items-center gap-1 group"
@@ -276,7 +293,7 @@ const AppContent: React.FC = () => {
               <ExternalLink className="w-3 h-3 opacity-60 group-hover:opacity-100" />
             </a>
             <a
-              href="/openapi.json"
+              href="https://otanime.webkulo.com/openapi.json"
               target="_blank"
               rel="noreferrer"
               className="hover:text-white transition-colors flex items-center gap-1 group"
@@ -318,7 +335,7 @@ const AppContent: React.FC = () => {
                 <span className="text-white/60">API Backend</span>
                 <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-400">
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  Online (Hono & Bun)
+                  Online (https://otanime.webkulo.com/api)
                 </span>
               </div>
               <div className="p-3 rounded-xl bg-white/[0.04] border border-white/5 flex items-center justify-between">
@@ -334,7 +351,7 @@ const AppContent: React.FC = () => {
               <div className="p-3 rounded-xl bg-white/[0.04] border border-white/5 flex items-center justify-between">
                 <span className="text-white/60">OpenAPI Spec</span>
                 <a
-                  href="/openapi.json"
+                  href="https://otanime.webkulo.com/openapi.json"
                   target="_blank"
                   rel="noreferrer"
                   className="text-rose-400 hover:underline font-medium"
@@ -345,7 +362,7 @@ const AppContent: React.FC = () => {
               <div className="p-3 rounded-xl bg-white/[0.04] border border-white/5 flex items-center justify-between">
                 <span className="text-white/60">Interactive Docs</span>
                 <a
-                  href="/docs"
+                  href="https://otanime.webkulo.com/docs"
                   target="_blank"
                   rel="noreferrer"
                   className="text-rose-400 hover:underline font-medium"

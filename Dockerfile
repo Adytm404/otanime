@@ -9,7 +9,7 @@ RUN bun install --frozen-lockfile
 COPY index.html tsconfig*.json vite.config.ts tailwind.config.js postcss.config.js ./
 COPY src ./src
 
-ARG VITE_API_BASE_URL=/api
+ARG VITE_API_BASE_URL=https://otanime.webkulo.com/api
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 RUN bun run build

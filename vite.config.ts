@@ -10,15 +10,15 @@ export default defineConfig({
     allowedHosts: true, // Allow any host (serveo, ngrok, localtunnel, etc.)
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'https://otanime.webkulo.com',
         changeOrigin: true,
       },
       '/docs': {
-        target: 'http://localhost:3000',
+        target: 'https://otanime.webkulo.com',
         changeOrigin: true,
       },
       '/openapi.json': {
-        target: 'http://localhost:3000',
+        target: 'https://otanime.webkulo.com',
         changeOrigin: true,
       },
     },
@@ -29,15 +29,15 @@ export default defineConfig({
     allowedHosts: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'https://otanime.webkulo.com',
         changeOrigin: true,
       },
       '/docs': {
-        target: 'http://localhost:3000',
+        target: 'https://otanime.webkulo.com',
         changeOrigin: true,
       },
       '/openapi.json': {
-        target: 'http://localhost:3000',
+        target: 'https://otanime.webkulo.com',
         changeOrigin: true,
       },
     },

@@ -18,6 +18,7 @@ interface HomePageProps {
   loading: boolean;
   error?: string | null;
   onRefresh: () => void;
+  onClearSearch?: () => void;
 }
 
 export const HomePage: React.FC<HomePageProps> = ({
@@ -29,7 +30,8 @@ export const HomePage: React.FC<HomePageProps> = ({
   isSearching,
   loading,
   error,
-  onRefresh
+  onRefresh,
+  onClearSearch
 }) => {
   const navigate = useNavigate();
 
@@ -182,17 +184,27 @@ export const HomePage: React.FC<HomePageProps> = ({
       {/* Search Results View if Searching */}
       {searchQuery.trim().length > 0 ? (
         <div className="max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-10 pt-24 sm:pt-28 pb-16">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
             <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2.5">
               <Search className="w-5 h-5 text-white/60" />
               <span>Hasil Pencarian "{searchQuery}"</span>
             </h2>
-            {isSearching && (
-              <div className="flex items-center gap-2 text-xs text-white/60">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Mencari di database Otanime...</span>
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              {isSearching && (
+                <div className="flex items-center gap-2 text-xs text-white/60">
+                  <Loader2 className="w-4 h-4 animate-spin text-rose-500" />
+                  <span>Mencari di database Otanime...</span>
+                </div>
+              )}
+              {onClearSearch && (
+                <button
+                  onClick={onClearSearch}
+                  className="px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-xs font-semibold transition-colors"
+                >
+                  Tutup Pencarian
+                </button>
+              )}
+            </div>
           </div>
 
           {searchResults.length > 0 ? (
@@ -202,9 +214,17 @@ export const HomePage: React.FC<HomePageProps> = ({
               ))}
             </div>
           ) : !isSearching ? (
-            <div className="py-20 text-center text-white/50 space-y-2">
-              <p className="text-lg">Tidak ada anime yang cocok dengan kata kunci</p>
+            <div className="py-20 text-center text-white/50 space-y-3">
+              <p className="text-lg text-white/80">Tidak ada anime yang cocok dengan kata kunci</p>
               <p className="text-xs text-white/30">Coba gunakan judul alternatif atau bahasa Jepang</p>
+              {onClearSearch && (
+                <button
+                  onClick={onClearSearch}
+                  className="mt-2 px-5 py-2 rounded-full bg-white text-black text-xs font-semibold hover:bg-white/90 transition-all"
+                >
+                  Kembali ke Beranda
+                </button>
+              )}
             </div>
           ) : null}
         </div>

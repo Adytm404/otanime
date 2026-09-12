@@ -8,8 +8,8 @@ import {
   EpisodeDetail
 } from '../types/anime';
 
-// Base API URL from environment variables, defaults to '/api' for same-origin proxy
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/+$/, '');
+// Base API URL from environment variables, defaults to 'https://otanime.webkulo.com/api'
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'https://otanime.webkulo.com/api').replace(/\/+$/, '');
 
 async function fetchJson<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;

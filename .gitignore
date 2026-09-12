@@ -1,3 +1,8 @@
+# Archives
+*.zip
+*.tar.gz
+*.tgz
+
 # Dependencies
 node_modules
 */node_modules
