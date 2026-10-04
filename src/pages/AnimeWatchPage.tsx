@@ -44,6 +44,19 @@ interface AnimeWatchPageProps {
   }) => void;
 }
 
+function normalizeDirectVideoUrl(url?: string | null): string | null {
+  if (!url) return null;
+  let clean = url.trim().replace(/&amp;/g, '&');
+  if (
+    (clean.includes('cdn.odcloud.net') || !/\.[a-zA-Z0-9]{3,4}(\?.*)?$/i.test(clean)) &&
+    !clean.endsWith('.mp4') &&
+    !clean.includes('googlevideo.com')
+  ) {
+    clean += '.mp4';
+  }
+  return clean;
+}
+
 export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
   myList,
   watchHistory = [],
@@ -111,9 +124,34 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
         setEpisode(epData);
 
         // Set initial stream URL
-        setCurrentEmbedUrl(epData.stream_url);
-        setCurrentDirectUrl(epData.direct_video_url || null);
-        if (epData.direct_video_url) {
+        let initialDirect = normalizeDirectVideoUrl(epData.direct_video_url);
+        let initialEmbed = epData.stream_url;
+
+        // Auto-fallback: if default stream is in maintenance or missing, auto-find first working mirror
+        if ((!initialDirect && (!initialEmbed || initialEmbed.includes('maintenance'))) && epData.mirrors && epData.mirrors.length > 0) {
+          for (const m of epData.mirrors) {
+            try {
+              const resolved = await resolveMirror({
+                raw_content: m.raw_content || undefined,
+                content: m.content || undefined
+              });
+              const direct = normalizeDirectVideoUrl(resolved.direct_video_url);
+              const embed = resolved.embed_url;
+              if (direct || (embed && !embed.includes('maintenance'))) {
+                initialDirect = direct;
+                initialEmbed = embed;
+                setActiveMirror(m);
+                break;
+              }
+            } catch {
+              // Try next mirror
+            }
+          }
+        }
+
+        setCurrentEmbedUrl(initialEmbed);
+        setCurrentDirectUrl(initialDirect);
+        if (initialDirect) {
           setPlayerMode('direct');
         } else {
           setPlayerMode('embed');
@@ -214,12 +252,14 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
         content: mirror.content || undefined
       });
 
-      if (resolved.embed_url) {
+      const direct = normalizeDirectVideoUrl(resolved.direct_video_url);
+
+      if (direct) {
+        setCurrentDirectUrl(direct);
+        setPlayerMode('direct');
+      } else if (resolved.embed_url) {
         setCurrentEmbedUrl(resolved.embed_url);
         setPlayerMode('embed');
-      }
-      if (resolved.direct_video_url) {
-        setCurrentDirectUrl(resolved.direct_video_url);
       }
     } catch (err) {
       console.error('Error resolving mirror:', err);
@@ -359,7 +399,9 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
                   onProgress={handleVideoProgress}
                   onFallbackToEmbed={() => {
                     setPlayerMode('embed');
-                    setCurrentEmbedUrl(episode.stream_url);
+                    if (!currentEmbedUrl || currentEmbedUrl.includes('maintenance')) {
+                      setCurrentEmbedUrl(episode.stream_url);
+                    }
                   }}
                 />
               ) : currentEmbedUrl ? (
@@ -461,8 +503,15 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
                   {/* Default server button */}
                   <button
                     onClick={() => {
-                      setCurrentEmbedUrl(episode.stream_url);
                       setActiveMirror(null);
+                      const defaultDirect = normalizeDirectVideoUrl(episode.direct_video_url);
+                      if (defaultDirect) {
+                        setCurrentDirectUrl(defaultDirect);
+                        setPlayerMode('direct');
+                      } else {
+                        setCurrentEmbedUrl(episode.stream_url);
+                        setPlayerMode('embed');
+                      }
                     }}
                     className={`px-3.5 py-2 rounded-xl text-xs font-medium transition-all ${
                       !activeMirror

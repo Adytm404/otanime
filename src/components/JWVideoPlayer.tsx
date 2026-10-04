@@ -276,8 +276,21 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
       }
     };
     const onError = () => {
-      setError('Direct video stream gagal diputar atau format tidak didukung.');
+      // If direct video fails without .mp4 extension, try appending .mp4
+      if (v && src && !src.endsWith('.mp4') && !src.includes('.mp4?') && !src.includes('googlevideo.com')) {
+        const withMp4 = src + '.mp4';
+        if (v.src !== withMp4) {
+          v.src = withMp4;
+          v.load();
+          return;
+        }
+      }
       setIsBuffering(false);
+      setError('Direct video stream gagal diputar atau format tidak didukung.');
+      // Automatically fallback to embed player if callback provided
+      if (onFallbackToEmbed) {
+        onFallbackToEmbed();
+      }
     };
 
     v.addEventListener('timeupdate', onTimeUpdate);

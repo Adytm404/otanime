@@ -110,17 +110,29 @@ export async function extractDirectVideo(embedUrl: string): Promise<string | nul
 
     const html = await res.text();
 
+    function sanitizeUrl(rawUrl: string): string {
+      let clean = rawUrl.trim().replace(/&amp;/g, '&');
+      if (
+        (clean.includes('cdn.odcloud.net') || !/\.[a-zA-Z0-9]{3,4}(\?.*)?$/i.test(clean)) &&
+        !clean.endsWith('.mp4') &&
+        !clean.includes('googlevideo.com')
+      ) {
+        clean += '.mp4';
+      }
+      return clean;
+    }
+
     // 1. Check videoURL variable (used in Desustream / Odcdn)
     const videoUrlMatch = html.match(/videoURL\s*=\s*["']([^"']+)["']/i);
-    if (videoUrlMatch && videoUrlMatch[1]) return videoUrlMatch[1];
+    if (videoUrlMatch && videoUrlMatch[1]) return sanitizeUrl(videoUrlMatch[1]);
 
     // 2. Check sources / file array (jwplayer style)
     const fileMatch = html.match(/["']?file["']?\s*:\s*["']([^"']+\.mp4[^"']*)["']/i);
-    if (fileMatch && fileMatch[1]) return fileMatch[1];
+    if (fileMatch && fileMatch[1]) return sanitizeUrl(fileMatch[1]);
 
     // 3. Check html video / source tag
     const srcMatch = html.match(/<(?:video|source)[^>]+src=["']([^"']+)["']/i);
-    if (srcMatch && srcMatch[1]) return srcMatch[1];
+    if (srcMatch && srcMatch[1]) return sanitizeUrl(srcMatch[1]);
 
     return null;
   } catch {
