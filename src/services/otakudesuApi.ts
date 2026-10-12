@@ -11,6 +11,18 @@ import {
 // Base API URL from environment variables, defaults to 'https://otanime.webkulo.com/api'
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'https://otanime.webkulo.com/api').replace(/\/+$/, '');
 
+// googlevideo links are bound to the backend's IP, so they must be relayed through it
+export function toPlayableVideoUrl(url: string): string {
+  try {
+    if (/(^|\.)googlevideo\.com$/i.test(new URL(url).hostname)) {
+      return `${API_BASE}/stream/proxy?url=${encodeURIComponent(url)}`;
+    }
+  } catch {
+    // not an absolute URL; leave as is
+  }
+  return url;
+}
+
 async function fetchJson<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
   const res = await fetch(url, options);

@@ -12,6 +12,7 @@ import {
 import { getAnimeExtraDetails } from '../services/jikan';
 import { resolveDownloadUrl, resolveMirror } from '../services/stream';
 import { getCache, setCache } from '../utils/cache';
+import { USER_AGENT } from '../config/constants';
 
 export const animeRouter = new Hono();
 
@@ -150,6 +151,42 @@ animeRouter.get('/episode/resolve-download', async (c) => {
 
   const directUrl = await resolveDownloadUrl(targetUrl);
   return c.json({ success: true, direct_url: directUrl });
+});
+
+// Direct video hosts whose links are bound to the scraper's IP and must be relayed
+const PROXY_ALLOWED_HOSTS = /(^|\.)googlevideo\.com$/i;
+const PROXY_PASSTHROUGH_HEADERS = ['content-type', 'content-length', 'content-range', 'accept-ranges'];
+
+// GET /api/stream/proxy?url=https://...googlevideo.com/videoplayback?...
+animeRouter.get('/stream/proxy', async (c) => {
+  const targetUrl = c.req.query('url');
+  let parsed: URL;
+  try {
+    parsed = new URL(targetUrl || '');
+  } catch {
+    return c.json({ success: false, message: 'Query parameter "url" must be a valid URL' }, 400);
+  }
+  if (parsed.protocol !== 'https:' || !PROXY_ALLOWED_HOSTS.test(parsed.hostname)) {
+    return c.json({ success: false, message: 'Host not allowed' }, 403);
+  }
+
+  const range = c.req.header('range');
+  const upstream = await fetch(parsed.toString(), {
+    headers: {
+      'User-Agent': USER_AGENT,
+      ...(range ? { Range: range } : {}),
+    },
+    signal: c.req.raw.signal,
+  });
+
+  const headers = new Headers();
+  for (const name of PROXY_PASSTHROUGH_HEADERS) {
+    const value = upstream.headers.get(name);
+    if (value) headers.set(name, value);
+  }
+  headers.set('Cache-Control', 'private, max-age=3600');
+
+  return new Response(upstream.body, { status: upstream.status, headers });
 });
 
 // POST /api/episode/resolve-mirror

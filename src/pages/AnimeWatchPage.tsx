@@ -4,7 +4,8 @@ import {
   fetchEpisodeDetail,
   fetchAnimeDetail,
   resolveMirror,
-  resolveDownload
+  resolveDownload,
+  toPlayableVideoUrl
 } from '../services/otakudesuApi';
 import { EpisodeDetail, AnimeDetail, MirrorStream, AnimeItem, WatchHistoryItem } from '../types/anime';
 import { parseEpisodeInfo } from '../utils/formatters';
@@ -60,7 +61,7 @@ function normalizeDirectVideoUrl(url?: string | null): string | null {
   ) {
     clean += '.mp4';
   }
-  return clean;
+  return toPlayableVideoUrl(clean);
 }
 
 export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
