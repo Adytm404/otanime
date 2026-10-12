@@ -1,6 +1,14 @@
 import * as cheerio from 'cheerio';
 import type { AnimeDetail } from '../types';
 
+// api.jikan.moe is unreachable from some networks; fail fast instead of hanging the request
+const JIKAN_TIMEOUT_MS = 8000;
+
+const jikanFetch = (path: string) =>
+  fetch(`https://api.jikan.moe/v4${path}`, { signal: AbortSignal.timeout(JIKAN_TIMEOUT_MS) });
+
+const errorMessage = (err: unknown) => (err instanceof Error ? err.message : String(err));
+
 export interface AnimeStaffItem {
   name: string;
   role: string;
@@ -222,7 +230,7 @@ export async function getAnimeExtraDetails(detail: AnimeDetail): Promise<AnimeEx
 
   // 1. Fetch main anime details from Jikan
   try {
-    const jikanRes = await fetch(`https://api.jikan.moe/v4/anime/${malId}`);
+    const jikanRes = await jikanFetch(`/anime/${malId}`);
     if (jikanRes.ok) {
       const jikanJson = await jikanRes.json();
       const d = jikanJson.data;
@@ -270,12 +278,12 @@ export async function getAnimeExtraDetails(detail: AnimeDetail): Promise<AnimeEx
       }
     }
   } catch (err) {
-    console.warn(`Jikan main detail failed for MAL ${malId}:`, err);
+    console.warn(`Jikan main detail failed for MAL ${malId}: ${errorMessage(err)}`);
   }
 
   // 2. Fetch Characters & Seiyuu from Jikan
   try {
-    const charsRes = await fetch(`https://api.jikan.moe/v4/anime/${malId}/characters`);
+    const charsRes = await jikanFetch(`/anime/${malId}/characters`);
     if (charsRes.ok) {
       const charsJson = await charsRes.json();
       if (Array.isArray(charsJson.data) && charsJson.data.length > 0) {
@@ -299,12 +307,12 @@ export async function getAnimeExtraDetails(detail: AnimeDetail): Promise<AnimeEx
       }
     }
   } catch (err) {
-    console.warn(`Jikan characters failed for MAL ${malId}:`, err);
+    console.warn(`Jikan characters failed for MAL ${malId}: ${errorMessage(err)}`);
   }
 
   // 3. Fetch Staff from Jikan
   try {
-    const staffRes = await fetch(`https://api.jikan.moe/v4/anime/${malId}/staff`);
+    const staffRes = await jikanFetch(`/anime/${malId}/staff`);
     if (staffRes.ok) {
       const staffJson = await staffRes.json();
       if (Array.isArray(staffJson.data) && staffJson.data.length > 0) {
@@ -336,7 +344,7 @@ export async function getAnimeExtraDetails(detail: AnimeDetail): Promise<AnimeEx
       }
     }
   } catch (err) {
-    console.warn(`Jikan staff failed for MAL ${malId}:`, err);
+    console.warn(`Jikan staff failed for MAL ${malId}: ${errorMessage(err)}`);
   }
 
   // 4. Fallback to direct MAL scraper if characters or staff are empty
