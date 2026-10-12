@@ -4,19 +4,23 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "build": "esbuild src/server.ts --bundle --platform=node --format=esm --target=node24 --packages=external --outfile=app.js",
     "start": "bun run src/index.ts",
     "dev": "bun --watch src/index.ts",
     "docs:build": "bunx @redocly/cli build-docs openapi.json -o docs.html",
     "docs:lint": "bunx @redocly/cli lint openapi.json"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "esbuild": "^0.28.2"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
+    "@hono/node-server": "^2.1.1",
     "cheerio": "^1.2.0",
     "hono": "^4.13.7"
-  }
+  },
+  "main": "app.js"
 }
