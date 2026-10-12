@@ -1,4 +1,4 @@
-import { BASE_URL, DEFAULT_HEADERS } from '../config/constants';
+import { getBaseUrl, getRequestHeaders } from '../config/baseUrl';
 
 export interface ResolveMirrorResult {
   raw_html: string;
@@ -13,10 +13,10 @@ export async function getNonce(): Promise<string> {
   const form = new URLSearchParams();
   form.append('action', 'aa1208d27f29ca340c92c66d1926f13f');
 
-  const res = await fetch(`${BASE_URL}/wp-admin/admin-ajax.php`, {
+  const res = await fetch(`${await getBaseUrl()}/wp-admin/admin-ajax.php`, {
     method: 'POST',
     headers: {
-      ...DEFAULT_HEADERS,
+      ...(await getRequestHeaders()),
       'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
       'X-Requested-With': 'XMLHttpRequest',
     },
@@ -56,10 +56,10 @@ export async function resolveMirror(
   form.append('nonce', nonce);
   form.append('action', '2a3505c93b0035d3f455df82bf976b84');
 
-  const res = await fetch(`${BASE_URL}/wp-admin/admin-ajax.php`, {
+  const res = await fetch(`${await getBaseUrl()}/wp-admin/admin-ajax.php`, {
     method: 'POST',
     headers: {
-      ...DEFAULT_HEADERS,
+      ...(await getRequestHeaders()),
       'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
       'X-Requested-With': 'XMLHttpRequest',
     },
@@ -95,15 +95,39 @@ export async function resolveMirror(
 }
 
 /**
- * Extract direct MP4 / HLS link from embed player (desustream / odcdn / etc.)
+ * Statically decode a Dean Edwards `eval(function(p,a,c,k,e,d){...})` packer
+ * payload without executing it.
+ */
+function unpackPackedJs(html: string): string | null {
+  const match = html.match(
+    /eval\(function\(p,a,c,k,e,d\)\{[\s\S]*?\}\('([\s\S]*?)',(\d+),(\d+),'([\s\S]*?)'\.split\('\|'\)/
+  );
+  if (!match) return null;
+
+  const [, payload = '', radixStr = '', countStr = '', wordList = ''] = match;
+  const radix = parseInt(radixStr, 10);
+  const words = wordList.split('|');
+
+  const encode = (n: number): string =>
+    (n < radix ? '' : encode(Math.floor(n / radix))) +
+    ((n = n % radix) > 35 ? String.fromCharCode(n + 29) : n.toString(36));
+
+  const dict: Record<string, string> = {};
+  for (let i = parseInt(countStr, 10) - 1; i >= 0; i--) {
+    const key = encode(i);
+    dict[key] = words[i] || key;
+  }
+
+  return payload.replace(/\b\w+\b/g, (w) => dict[w] ?? w);
+}
+
+/**
+ * Extract direct MP4 / HLS link from embed player (desustream / odcdn / vidhide / etc.)
  */
 export async function extractDirectVideo(embedUrl: string): Promise<string | null> {
   try {
     const res = await fetch(embedUrl, {
-      headers: {
-        ...DEFAULT_HEADERS,
-        Referer: BASE_URL,
-      },
+      headers: await getRequestHeaders(),
     });
 
     if (!res.ok) return null;
@@ -134,6 +158,22 @@ export async function extractDirectVideo(embedUrl: string): Promise<string | nul
     const srcMatch = html.match(/<(?:video|source)[^>]+src=["']([^"']+)["']/i);
     if (srcMatch && srcMatch[1]) return sanitizeUrl(srcMatch[1]);
 
+    // 4. Packed jwplayer setup (vidhide / filelions family) exposing HLS links
+    const packed = unpackPackedJs(html);
+    if (packed) {
+      const linksMatch = packed.match(/links\s*=\s*(\{[^}]*\})/);
+      if (linksMatch && linksMatch[1]) {
+        try {
+          const links = JSON.parse(linksMatch[1]) as Record<string, string>;
+          // Absolute CDN links send CORS headers; the relative hls4 path on the embed host does not
+          const hls = links.hls2 || links.hls3 || links.hls4;
+          if (hls) return new URL(hls, embedUrl).toString();
+        } catch {
+          // fall through
+        }
+      }
+    }
+
     return null;
   } catch {
     return null;
@@ -152,7 +192,7 @@ export async function resolveDownloadUrl(desuStreamUrl: string): Promise<string>
     const res = await fetch(desuStreamUrl, {
       method: 'HEAD',
       redirect: 'manual',
-      headers: DEFAULT_HEADERS,
+      headers: await getRequestHeaders(),
     });
 
     const location = res.headers.get('location');
@@ -163,7 +203,7 @@ export async function resolveDownloadUrl(desuStreamUrl: string): Promise<string>
       const res = await fetch(desuStreamUrl, {
         method: 'GET',
         redirect: 'manual',
-        headers: DEFAULT_HEADERS,
+        headers: await getRequestHeaders(),
       });
       const location = res.headers.get('location');
       if (location) return location;

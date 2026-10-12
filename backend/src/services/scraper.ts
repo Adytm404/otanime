@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio';
-import { BASE_URL, DEFAULT_HEADERS } from '../config/constants';
+import { getBaseUrl, getRequestHeaders } from '../config/baseUrl';
 import { extractDirectVideo } from './stream';
 import type {
   AnimeDetail,
@@ -13,9 +13,9 @@ import type {
 } from '../types';
 
 export async function fetchHtml(url: string): Promise<string> {
-  const fullUrl = url.startsWith('http') ? url : `${BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+  const fullUrl = url.startsWith('http') ? url : `${await getBaseUrl()}${url.startsWith('/') ? '' : '/'}${url}`;
   const res = await fetch(fullUrl, {
-    headers: DEFAULT_HEADERS,
+    headers: await getRequestHeaders(),
   });
 
   if (!res.ok) {
@@ -29,7 +29,7 @@ export function extractSlug(url?: string, prefix: string = 'anime'): string {
   if (!url) return '';
   const regex = new RegExp(`/${prefix}/([^/]+)`);
   const match = url.match(regex);
-  return (match && match[1]) ? match[1] : url.replace(BASE_URL, '').replace(/^\/|\/$/g, '');
+  return (match && match[1]) ? match[1] : url.replace(/^https?:\/\/[^/]+/, '').replace(/^\/|\/$/g, '');
 }
 
 export async function getHome(): Promise<HomeData> {
@@ -282,9 +282,11 @@ export async function getEpisodeDetail(slug: string): Promise<EpisodeDetail> {
 
   // Navigations
   const prevHref = $('.flir a[title*="Sebelumnya"]').attr('href');
+  const nextHref = $('.flir a[title*="Selanjutnya"]').attr('href');
   const allEpisodesHref = $('.flir a:contains("See All")').attr('href');
 
   const previous_episode_slug = prevHref ? extractSlug(prevHref, 'episode') : null;
+  const next_episode_slug = nextHref ? extractSlug(nextHref, 'episode') : null;
   const anime_slug = allEpisodesHref ? extractSlug(allEpisodesHref, 'anime') : null;
 
   // Dropdown episodes
@@ -357,6 +359,7 @@ export async function getEpisodeDetail(slug: string): Promise<EpisodeDetail> {
     stream_url,
     direct_video_url,
     previous_episode_slug,
+    next_episode_slug,
     anime_slug,
     all_episodes,
     mirrors,
