@@ -89,6 +89,11 @@ export interface EpisodeDetail {
   };
 }
 
+export interface ScheduleDay {
+  day: string;
+  anime: Array<{ title: string; slug: string }>;
+}
+
 export interface Genre {
   name: string;
   slug: string;

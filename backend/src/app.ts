@@ -57,6 +57,7 @@ const infoHandler = (c: any) => {
       ongoing: 'GET /api/ongoing?page=1',
       complete: 'GET /api/complete?page=1',
       search: 'GET /api/search?q=:query',
+      schedule: 'GET /api/schedule',
       genres: 'GET /api/genres',
       genre_anime: 'GET /api/genres/:slug?page=1',
       anime_detail: 'GET /api/anime/:slug',

@@ -10,6 +10,7 @@ import type {
   GenreAnimeItem,
   HomeData,
   MirrorStream,
+  ScheduleDay,
 } from '../types';
 
 export async function fetchHtml(url: string): Promise<string> {
@@ -394,6 +395,30 @@ export async function getGenres(): Promise<Genre[]> {
 }
 
 export const getGenreList = getGenres;
+
+export async function getSchedule(): Promise<ScheduleDay[]> {
+  const html = await fetchHtml('/jadwal-rilis/');
+  const $ = cheerio.load(html);
+
+  const days: ScheduleDay[] = [];
+  $('.kglist321').each((_, el) => {
+    const day = $(el).find('h2').first().text().trim();
+    if (!day) return;
+
+    const anime = $(el)
+      .find('ul li a')
+      .map((__, a) => ({
+        title: $(a).text().trim(),
+        slug: extractSlug($(a).attr('href'), 'anime'),
+      }))
+      .get()
+      .filter((item) => item.title && item.slug);
+
+    days.push({ day, anime });
+  });
+
+  return days;
+}
 
 export async function getAnimeByGenre(
   genreSlug: string,

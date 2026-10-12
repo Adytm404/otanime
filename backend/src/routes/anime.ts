@@ -7,6 +7,7 @@ import {
   getGenreList,
   getHome,
   getOngoing,
+  getSchedule,
   searchAnime,
 } from '../services/scraper';
 import { getAnimeExtraDetails } from '../services/jikan';
@@ -72,6 +73,19 @@ animeRouter.get('/search', async (c) => {
 
   const data = await searchAnime(query);
   setCache(cacheKey, data, 600);
+  return c.json({ success: true, cached: false, data });
+});
+
+// GET /api/schedule
+animeRouter.get('/schedule', async (c) => {
+  const cacheKey = 'schedule';
+  const cached = getCache(cacheKey);
+  if (cached) {
+    return c.json({ success: true, cached: true, data: cached });
+  }
+
+  const data = await getSchedule();
+  setCache(cacheKey, data, 3600); // 1 hour
   return c.json({ success: true, cached: false, data });
 });
 

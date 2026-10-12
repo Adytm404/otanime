@@ -190,6 +190,48 @@
         }
       }
     },
+    "/api/schedule": {
+      "get": {
+        "tags": ["Katalog Anime"],
+        "summary": "Jadwal rilis anime ongoing per hari",
+        "description": "Daftar anime ongoing yang dikelompokkan berdasarkan hari tayang (Senin–Minggu) dari halaman jadwal rilis.",
+        "responses": {
+          "200": {
+            "description": "Berhasil mengambil jadwal rilis",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "cached": { "type": "boolean", "example": false },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "day": { "type": "string", "example": "Senin" },
+                          "anime": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "title": { "type": "string", "example": "Grand Blue Season 3" },
+                                "slug": { "type": "string", "example": "grand-blue-s3-sub-indo" }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/genres": {
       "get": {
         "tags": ["Genre Anime"],
