@@ -293,6 +293,15 @@ const AppContent: React.FC = () => {
               <ExternalLink className="w-3 h-3 opacity-60 group-hover:opacity-100" />
             </a>
             <a
+              href="https://github.com/Adytm404/otanime"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-white transition-colors flex items-center gap-1 group"
+            >
+              <span>GitHub</span>
+              <ExternalLink className="w-3 h-3 opacity-60 group-hover:opacity-100" />
+            </a>
+            <a
               href="https://otanime.webkulo.com/openapi.json"
               target="_blank"
               rel="noreferrer"

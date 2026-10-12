@@ -11,8 +11,12 @@ import {
   RotateCw,
   Settings,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Cast,
+  PictureInPicture2,
+  SkipForward
 } from 'lucide-react';
+import { castVideo, isCastSupported, loadCastSdk, onCastSessionEnded, promptNativeCast, stopCasting } from '../utils/cast';
 
 interface JWVideoPlayerProps {
   src: string;
@@ -21,7 +25,13 @@ interface JWVideoPlayerProps {
   initialTime?: number;
   onProgress?: (currentTime: number, duration: number) => void;
   onFallbackToEmbed?: () => void;
+  /** Called to go to the next episode; enables the auto-next countdown when the video ends */
+  onNext?: () => void;
+  nextLabel?: string;
+  autoPlay?: boolean;
 }
+
+const AUTO_NEXT_SECONDS = 3;
 
 const isHlsSource = (url: string) => /\.m3u8(\?|$)/i.test(url);
 
@@ -31,7 +41,10 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
   poster,
   initialTime,
   onProgress,
-  onFallbackToEmbed
+  onFallbackToEmbed,
+  onNext,
+  nextLabel,
+  autoPlay
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -69,6 +82,12 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
   const [isBuffering, setIsBuffering] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [isPip, setIsPip] = useState<boolean>(false);
+  const [canCast, setCanCast] = useState<boolean>(false);
+  const [isCasting, setIsCasting] = useState<boolean>(false);
+  const [nextCountdown, setNextCountdown] = useState<number | null>(null);
+  const onNextRef = useRef(onNext);
+  const autoPlayRef = useRef(autoPlay);
 
   const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -79,6 +98,67 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
   useEffect(() => {
     initialTimeRef.current = initialTime;
   }, [initialTime]);
+
+  useEffect(() => {
+    onNextRef.current = onNext;
+    if (!onNext) setNextCountdown(null);
+  }, [onNext]);
+
+  // Auto-next countdown: 3, 2, 1 -> next episode
+  useEffect(() => {
+    if (nextCountdown === null) return;
+    if (nextCountdown <= 0) {
+      setNextCountdown(null);
+      onNextRef.current?.();
+      return;
+    }
+    const t = setTimeout(() => setNextCountdown((c) => (c === null ? null : c - 1)), 1000);
+    return () => clearTimeout(t);
+  }, [nextCountdown]);
+
+  useEffect(() => {
+    setCanCast(isCastSupported(videoRef.current));
+    return onCastSessionEnded(() => setIsCasting(false));
+  }, []);
+
+  // Picture-in-Picture
+  const pipSupported = typeof document !== 'undefined' && !!document.pictureInPictureEnabled;
+
+  const togglePip = async () => {
+    const v = videoRef.current;
+    if (!v) return;
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else {
+        await v.requestPictureInPicture();
+      }
+    } catch (e) {
+      console.warn('Picture-in-Picture failed:', e);
+    }
+  };
+
+  // Cast to Chromecast (or AirPlay / Remote Playback where the Cast SDK is unavailable)
+  const handleCast = async () => {
+    const v = videoRef.current;
+    if (!v) return;
+
+    if (!(await loadCastSdk())) {
+      promptNativeCast(v);
+      return;
+    }
+
+    const started = await castVideo(src, title, v.currentTime, poster);
+    if (started) {
+      v.pause();
+      setIsCasting(true);
+    }
+  };
+
+  const handleStopCasting = () => {
+    stopCasting();
+    setIsCasting(false);
+  };
 
   // Format seconds to mm:ss or hh:mm:ss
   const formatTime = (timeInSeconds: number) => {
@@ -224,6 +304,10 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
           e.preventDefault();
           toggleFullscreen();
           break;
+        case 'KeyI':
+          e.preventDefault();
+          togglePip();
+          break;
         default:
           break;
       }
@@ -265,7 +349,18 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
         v.currentTime = resumeTime;
         setCurrentTime(resumeTime);
       }
+      // Continue playback straight away when arriving via auto-next
+      if (autoPlayRef.current) {
+        v.play().then(() => setIsPlaying(true)).catch(() => undefined);
+      }
     };
+
+    const onEnded = () => {
+      setIsPlaying(false);
+      if (onNextRef.current) setNextCountdown(AUTO_NEXT_SECONDS);
+    };
+    const onEnterPip = () => setIsPip(true);
+    const onLeavePip = () => setIsPip(false);
 
     const onWaiting = () => setIsBuffering(true);
     const onPlaying = () => {
@@ -302,6 +397,9 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
     v.addEventListener('playing', onPlaying);
     v.addEventListener('pause', onPause);
     v.addEventListener('error', onError);
+    v.addEventListener('ended', onEnded);
+    v.addEventListener('enterpictureinpicture', onEnterPip);
+    v.addEventListener('leavepictureinpicture', onLeavePip);
 
     return () => {
       if (onProgressRef.current && v.duration > 0) {
@@ -313,6 +411,9 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
       v.removeEventListener('playing', onPlaying);
       v.removeEventListener('pause', onPause);
       v.removeEventListener('error', onError);
+      v.removeEventListener('ended', onEnded);
+      v.removeEventListener('enterpictureinpicture', onEnterPip);
+      v.removeEventListener('leavepictureinpicture', onLeavePip);
     };
   }, [src]);
 
@@ -444,8 +545,65 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
         </div>
       )}
 
+      {/* Casting Overlay */}
+      {isCasting && (
+        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-black/85 text-center text-white p-6">
+          <Cast className="w-10 h-10 text-rose-500" />
+          <p className="text-sm font-medium text-white/90">Sedang diputar di perangkat Cast</p>
+          <button
+            onClick={handleStopCasting}
+            className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all"
+          >
+            Hentikan Cast
+          </button>
+        </div>
+      )}
+
+      {/* Auto-next Countdown Overlay */}
+      {nextCountdown !== null && !isCasting && (
+        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-4 bg-black/85 text-center text-white p-6">
+          <div className="relative w-20 h-20 flex items-center justify-center">
+            <svg className="absolute inset-0 -rotate-90" viewBox="0 0 80 80">
+              <circle cx="40" cy="40" r="36" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="5" />
+              <circle
+                cx="40"
+                cy="40"
+                r="36"
+                fill="none"
+                stroke="#e11d48"
+                strokeWidth="5"
+                strokeLinecap="round"
+                strokeDasharray={2 * Math.PI * 36}
+                strokeDashoffset={2 * Math.PI * 36 * (nextCountdown / AUTO_NEXT_SECONDS)}
+                className="transition-[stroke-dashoffset] duration-1000 ease-linear"
+              />
+            </svg>
+            <span key={nextCountdown} className="text-3xl font-extrabold animate-pulse">{nextCountdown}</span>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm sm:text-base font-semibold">Episode selanjutnya dalam {nextCountdown}...</p>
+            {nextLabel && <p className="text-xs text-white/60 max-w-xs truncate">{nextLabel}</p>}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setNextCountdown(null)}
+              className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-xs font-semibold transition-all"
+            >
+              Batal
+            </button>
+            <button
+              onClick={() => setNextCountdown(0)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-rose-600 hover:bg-rose-500 text-xs font-semibold shadow-lg shadow-rose-600/30 transition-all"
+            >
+              <SkipForward className="w-3.5 h-3.5 fill-white" />
+              Putar Sekarang
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Big Center Play/Pause Indicator on paused state */}
-      {!isPlaying && !error && !isBuffering && (
+      {!isPlaying && !error && !isBuffering && !isCasting && nextCountdown === null && (
         <div
           onClick={togglePlay}
           className="absolute inset-0 flex items-center justify-center bg-black/25 cursor-pointer z-20 transition-opacity"
@@ -563,8 +721,45 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
             </div>
           </div>
 
-          {/* Right Controls: Speed, Fullscreen */}
+          {/* Right Controls: Next, Cast, PiP, Speed, Fullscreen */}
           <div className="flex items-center gap-1 sm:gap-2 relative flex-shrink-0">
+            {onNext && (
+              <button
+                onClick={onNext}
+                className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/80 hover:text-white transition-colors"
+                title="Episode Selanjutnya"
+                aria-label="Episode Selanjutnya"
+              >
+                <SkipForward className="w-4 h-4" />
+              </button>
+            )}
+
+            {canCast && (
+              <button
+                onClick={handleCast}
+                className={`w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors ${
+                  isCasting ? 'text-rose-500' : 'text-white/80 hover:text-white'
+                }`}
+                title="Cast ke TV"
+                aria-label="Cast"
+              >
+                <Cast className="w-4 h-4" />
+              </button>
+            )}
+
+            {pipSupported && (
+              <button
+                onClick={togglePip}
+                className={`w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors ${
+                  isPip ? 'text-rose-500' : 'text-white/80 hover:text-white'
+                }`}
+                title="Picture in Picture"
+                aria-label="Picture in Picture"
+              >
+                <PictureInPicture2 className="w-4 h-4" />
+              </button>
+            )}
+
             {/* Speed Settings Popup */}
             <div className="relative">
               <button

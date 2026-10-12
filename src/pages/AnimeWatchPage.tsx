@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   fetchEpisodeDetail,
   fetchAnimeDetail,
@@ -74,6 +74,9 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
   const animeSlug = id || '';
   const episodeSlugParam = eps || '';
   const navigate = useNavigate();
+  const location = useLocation();
+  // Set when this episode was opened by the auto-next countdown
+  const autoPlayRequested = !!(location.state as { autoplay?: boolean } | null)?.autoplay;
 
   const [episode, setEpisode] = useState<EpisodeDetail | null>(null);
   const [anime, setAnime] = useState<AnimeDetail | null>(null);
@@ -406,6 +409,15 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
                   poster={anime?.poster}
                   initialTime={existingHistory?.currentTime}
                   onProgress={handleVideoProgress}
+                  autoPlay={autoPlayRequested}
+                  onNext={
+                    episode.next_episode_slug
+                      ? () => navigate(`/anime/${animeSlug}/${episode.next_episode_slug}`, { state: { autoplay: true } })
+                      : undefined
+                  }
+                  nextLabel={
+                    playlistItems.find((ep) => ep.slug === episode.next_episode_slug)?.title
+                  }
                   onFallbackToEmbed={() => {
                     setPlayerMode('embed');
                     if (!currentEmbedUrl || currentEmbedUrl.includes('maintenance')) {
