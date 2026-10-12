@@ -33,6 +33,9 @@ interface JWVideoPlayerProps {
 
 const AUTO_NEXT_SECONDS = 3;
 const DOUBLE_TAP_MS = 300;
+// Idle time before the controls (and cursor) hide
+const CONTROLS_HIDE_MS = 2800;
+const FULLSCREEN_CONTROLS_HIDE_MS = 5000;
 const TAP_SEEK_SECONDS = 10;
 
 const isHlsSource = (url: string) => /\.m3u8(\?|$)/i.test(url);
@@ -95,7 +98,7 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
   const onNextRef = useRef(onNext);
   const autoPlayRef = useRef(autoPlay);
 
-  const controlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [activityTick, setActivityTick] = useState<number>(0);
 
   useEffect(() => {
     onProgressRef.current = onProgress;
@@ -181,16 +184,35 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
   // Activity detection to auto-hide controls
   const handleUserActivity = () => {
     setShowControls(true);
-    if (controlsTimeoutRef.current) {
-      clearTimeout(controlsTimeoutRef.current);
-    }
-    if (isPlaying) {
-      controlsTimeoutRef.current = setTimeout(() => {
-        setShowControls(false);
-        setShowSettings(false);
-      }, 2800);
-    }
+    setActivityTick((t) => t + 1);
   };
+
+  // Hide controls after a period without mouse/touch activity: while playing, and
+  // always in fullscreen. Restarts on every activity; kept open while the speed menu is.
+  useEffect(() => {
+    if (!showControls || showSettings) return;
+    if (!isPlaying && !isFullscreen) return;
+    const t = setTimeout(
+      () => setShowControls(false),
+      isFullscreen ? FULLSCREEN_CONTROLS_HIDE_MS : CONTROLS_HIDE_MS
+    );
+    return () => clearTimeout(t);
+  }, [activityTick, showControls, showSettings, isPlaying, isFullscreen]);
+
+  // Keep fullscreen state in sync when exiting with Esc / system gestures
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      const active = document.fullscreenElement === containerRef.current;
+      setIsFullscreen(active);
+      setShowControls(true);
+      setActivityTick((t) => t + 1);
+    };
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+  }, []);
+
+  const controlsVisible = showControls || (!isPlaying && !isFullscreen);
+  const hideCursor = isFullscreen && !controlsVisible;
 
   // Hide the seek indicator shortly after the last double-tap
   useEffect(() => {
@@ -231,7 +253,7 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
     const controlsWereVisible = showControls;
     if (singleTapTimerRef.current) clearTimeout(singleTapTimerRef.current);
     singleTapTimerRef.current = setTimeout(() => {
-      if (controlsWereVisible && isPlaying) {
+      if (controlsWereVisible && (isPlaying || isFullscreen)) {
         setShowControls(false);
         setShowSettings(false);
       }
@@ -537,14 +559,16 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
         lastPointerTypeRef.current = e.pointerType;
       }}
       onPointerUp={handlePlayerPointerUp}
-      className="relative w-full aspect-video bg-black rounded-2xl overflow-hidden group select-none flex items-center justify-center border border-white/10 shadow-2xl shadow-black/80 font-sans"
+      className={`relative w-full aspect-video bg-black rounded-2xl overflow-hidden group select-none flex items-center justify-center border border-white/10 shadow-2xl shadow-black/80 font-sans ${
+        hideCursor ? 'cursor-none' : ''
+      }`}
     >
       {/* HTML5 Video Element */}
       <video
         ref={videoRef}
         src={isHlsSource(src) ? undefined : src}
         poster={poster}
-        className="w-full h-full object-contain cursor-pointer"
+        className={`w-full h-full object-contain ${hideCursor ? 'cursor-none' : 'cursor-pointer'}`}
         onClick={handleVideoClick}
         onDoubleClick={handleVideoDoubleClick}
         playsInline
@@ -572,7 +596,7 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
       {title && (
         <div
           className={`absolute top-4 left-5 z-30 transition-opacity duration-300 max-w-[60%] pointer-events-none ${
-            showControls || !isPlaying ? 'opacity-100' : 'opacity-0'
+            controlsVisible ? 'opacity-100' : 'opacity-0'
           }`}
         >
           <span className="text-xs sm:text-sm font-semibold text-white/90 drop-shadow truncate block">
@@ -700,7 +724,7 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
       {/* JWPlayer Custom Control Bar */}
       <div
         className={`absolute bottom-0 left-0 right-0 z-30 bg-gradient-to-t from-black/95 via-black/70 to-transparent pt-10 pb-3 px-4 transition-opacity duration-300 ${
-          showControls || !isPlaying ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          controlsVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
       >
         {/* Scrubber Progress Bar */}
