@@ -5,7 +5,8 @@ import {
   AnimeItem,
   AnimeDetail,
   AnimeExtraInfo,
-  EpisodeDetail
+  EpisodeDetail,
+  ScheduleDay
 } from '../types/anime';
 
 // Base API URL from environment variables, defaults to 'https://otanime.webkulo.com/api'
@@ -45,6 +46,10 @@ export async function fetchHome(): Promise<HomeData> {
 
 export async function fetchOngoing(page: number = 1): Promise<PagedAnimeData> {
   return await fetchJson<PagedAnimeData>(`/ongoing?page=${page}`);
+}
+
+export async function fetchSchedule(): Promise<ScheduleDay[]> {
+  return await fetchJson<ScheduleDay[]>('/schedule');
 }
 
 export async function fetchComplete(page: number = 1): Promise<PagedAnimeData> {

@@ -5,6 +5,7 @@ import { HomePage } from './pages/HomePage';
 import { GenrePage } from './pages/GenrePage';
 import { MyListPage } from './pages/MyListPage';
 import { NewSeasonPage } from './pages/NewSeasonPage';
+import { SchedulePage } from './pages/SchedulePage';
 import { AnimeDetailPage } from './pages/AnimeDetailPage';
 import { AnimeWatchPage } from './pages/AnimeWatchPage';
 import { fetchHome, searchAnime } from './services/otakudesuApi';
@@ -55,6 +56,8 @@ const AppContent: React.FC = () => {
       setCurrentTab('my-list');
     } else if (location.pathname.startsWith('/new-season')) {
       setCurrentTab('new-season');
+    } else if (location.pathname.startsWith('/jadwal')) {
+      setCurrentTab('schedule');
     } else if (location.pathname === '/') {
       setCurrentTab('home');
     }
@@ -252,6 +255,8 @@ const AppContent: React.FC = () => {
             path="/new-season"
             element={<NewSeasonPage initialList={ongoingList} />}
           />
+
+          <Route path="/jadwal" element={<SchedulePage ongoingList={ongoingList} />} />
 
           <Route
             path="/anime/:id"

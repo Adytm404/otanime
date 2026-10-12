@@ -32,6 +32,8 @@ interface JWVideoPlayerProps {
 }
 
 const AUTO_NEXT_SECONDS = 3;
+const DOUBLE_TAP_MS = 300;
+const TAP_SEEK_SECONDS = 10;
 
 const isHlsSource = (url: string) => /\.m3u8(\?|$)/i.test(url);
 
@@ -86,6 +88,10 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
   const [canCast, setCanCast] = useState<boolean>(false);
   const [isCasting, setIsCasting] = useState<boolean>(false);
   const [nextCountdown, setNextCountdown] = useState<number | null>(null);
+  const [seekIndicator, setSeekIndicator] = useState<{ side: 'left' | 'right'; seconds: number; id: number } | null>(null);
+  const lastPointerTypeRef = useRef<string>('mouse');
+  const lastTapRef = useRef<{ time: number; side: 'left' | 'center' | 'right'; count: number } | null>(null);
+  const singleTapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onNextRef = useRef(onNext);
   const autoPlayRef = useRef(autoPlay);
 
@@ -184,6 +190,60 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
         setShowSettings(false);
       }, 2800);
     }
+  };
+
+  // Hide the seek indicator shortly after the last double-tap
+  useEffect(() => {
+    if (!seekIndicator) return;
+    const t = setTimeout(() => setSeekIndicator(null), 650);
+    return () => clearTimeout(t);
+  }, [seekIndicator]);
+
+  useEffect(() => {
+    return () => {
+      if (singleTapTimerRef.current) clearTimeout(singleTapTimerRef.current);
+    };
+  }, []);
+
+  // Touch: double-tap left/right third to seek -/+10s (repeat taps add up), single tap toggles controls.
+  // Mouse: click toggles play, double-click toggles fullscreen.
+  // Attached to the whole player so taps on the control-bar gradient count too
+  const handlePlayerPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === 'mouse') return;
+    if ((e.target as Element).closest('button, input')) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const side = x < 1 / 3 ? 'left' : x > 2 / 3 ? 'right' : 'center';
+    const now = Date.now();
+    const prev = lastTapRef.current;
+
+    if (prev && side !== 'center' && prev.side === side && now - prev.time < DOUBLE_TAP_MS) {
+      if (singleTapTimerRef.current) clearTimeout(singleTapTimerRef.current);
+      const count = prev.count + 1;
+      skip(side === 'left' ? -TAP_SEEK_SECONDS : TAP_SEEK_SECONDS);
+      setSeekIndicator({ side, seconds: (count - 1) * TAP_SEEK_SECONDS, id: now });
+      lastTapRef.current = { time: now, side, count };
+      return;
+    }
+
+    lastTapRef.current = { time: now, side, count: 1 };
+    const controlsWereVisible = showControls;
+    if (singleTapTimerRef.current) clearTimeout(singleTapTimerRef.current);
+    singleTapTimerRef.current = setTimeout(() => {
+      if (controlsWereVisible && isPlaying) {
+        setShowControls(false);
+        setShowSettings(false);
+      }
+    }, DOUBLE_TAP_MS);
+  };
+
+  const handleVideoClick = () => {
+    if (lastPointerTypeRef.current === 'mouse') togglePlay();
+  };
+
+  const handleVideoDoubleClick = () => {
+    if (lastPointerTypeRef.current === 'mouse') toggleFullscreen();
   };
 
   // Play / Pause toggle
@@ -473,6 +533,10 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
       ref={containerRef}
       onMouseMove={handleUserActivity}
       onClick={handleUserActivity}
+      onPointerDown={(e) => {
+        lastPointerTypeRef.current = e.pointerType;
+      }}
+      onPointerUp={handlePlayerPointerUp}
       className="relative w-full aspect-video bg-black rounded-2xl overflow-hidden group select-none flex items-center justify-center border border-white/10 shadow-2xl shadow-black/80 font-sans"
     >
       {/* HTML5 Video Element */}
@@ -481,9 +545,28 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
         src={isHlsSource(src) ? undefined : src}
         poster={poster}
         className="w-full h-full object-contain cursor-pointer"
-        onClick={togglePlay}
+        onClick={handleVideoClick}
+        onDoubleClick={handleVideoDoubleClick}
         playsInline
       />
+
+      {/* Double-tap Seek Indicator */}
+      {seekIndicator && (
+        <div
+          key={seekIndicator.id}
+          className={`absolute inset-y-0 z-20 w-1/3 flex items-center justify-center pointer-events-none bg-white/15 ${
+            seekIndicator.side === 'left' ? 'left-0 rounded-r-[50%]' : 'right-0 rounded-l-[50%]'
+          }`}
+        >
+          <div className="flex flex-col items-center gap-1 text-white drop-shadow">
+            {seekIndicator.side === 'left' ? <RotateCcw className="w-7 h-7" /> : <RotateCw className="w-7 h-7" />}
+            <span className="text-sm font-bold">
+              {seekIndicator.side === 'left' ? '-' : '+'}
+              {seekIndicator.seconds} detik
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Top Title Overlay on hover */}
       {title && (

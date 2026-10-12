@@ -66,6 +66,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { label: 'Genres', tab: 'genres', path: '/genres' },
     { label: 'My List', tab: 'my-list', path: '/my-list' },
     { label: 'New Season', tab: 'new-season', path: '/new-season' },
+    { label: 'Jadwal', tab: 'schedule', path: '/jadwal' },
   ];
 
   const handleNotifClick = (slug: string) => {

@@ -16,6 +16,11 @@ export interface HomeData {
   complete: AnimeItem[];
 }
 
+export interface ScheduleDay {
+  day: string;
+  anime: Array<{ title: string; slug: string }>;
+}
+
 export interface PagedAnimeData {
   data: AnimeItem[];
   currentPage: number;
@@ -181,4 +186,4 @@ export interface WatchHistoryItem {
   updated_at: number;
 }
 
-export type NavTab = 'home' | 'genres' | 'my-list' | 'new-season';
+export type NavTab = 'home' | 'genres' | 'my-list' | 'new-season' | 'schedule';
