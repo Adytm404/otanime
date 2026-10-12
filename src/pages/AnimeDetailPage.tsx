@@ -4,6 +4,7 @@ import { fetchAnimeDetail, fetchAnimeByGenre, fetchAnimeExtra } from '../service
 import { AnimeDetail, AnimeItem, AnimeExtraInfo, WatchHistoryItem } from '../types/anime';
 import { AnimeCard } from '../components/AnimeCard';
 import { parseEpisodeInfo } from '../utils/formatters';
+import { useDocumentTitle } from '../utils/useDocumentTitle';
 import {
   Play,
   Heart,
@@ -86,6 +87,8 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
   useEffect(() => {
     loadData();
   }, [slug]);
+
+  useDocumentTitle(anime?.title);
 
   // ALL HOOKS MUST BE CALLED UNCONDITIONALLY BEFORE CONDITIONAL RETURNS
   const sortedEpisodes = useMemo(() => {

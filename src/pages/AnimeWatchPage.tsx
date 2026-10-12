@@ -8,6 +8,7 @@ import {
 } from '../services/otakudesuApi';
 import { EpisodeDetail, AnimeDetail, MirrorStream, AnimeItem, WatchHistoryItem } from '../types/anime';
 import { parseEpisodeInfo } from '../utils/formatters';
+import { useDocumentTitle } from '../utils/useDocumentTitle';
 import { JWVideoPlayer } from '../components/JWVideoPlayer';
 import {
   ChevronLeft,
@@ -27,6 +28,11 @@ import {
   RefreshCw,
   Video
 } from 'lucide-react';
+
+// Hosts that refuse to play inside a sandboxed iframe ("not available due to sandboxed iframe")
+const SANDBOX_BLOCKED_HOSTS = /vidhide|filelions|dhtpre|streamwish|filemoon/i;
+
+const isSandboxBlocked = (serverAndUrl: string) => SANDBOX_BLOCKED_HOSTS.test(serverAndUrl);
 
 interface AnimeWatchPageProps {
   myList: AnimeItem[];
@@ -188,6 +194,8 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
       cancelled = true;
     };
   }, [animeSlug, episodeSlugParam]);
+
+  useDocumentTitle(episode?.title || anime?.title);
 
   // Scroll active episode into view
   useEffect(() => {
@@ -410,7 +418,11 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
                   src={currentEmbedUrl}
                   title={episode.title}
                   className="w-full h-full border-0"
-                  sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
+                  sandbox={
+                    isSandboxBlocked(`${activeMirror?.server ?? ''} ${currentEmbedUrl}`)
+                      ? undefined
+                      : 'allow-scripts allow-same-origin allow-forms allow-presentation'
+                  }
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />

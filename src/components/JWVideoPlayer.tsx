@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
+import type Hls from 'hls.js';
 import {
   Play,
   Pause,
@@ -21,6 +22,8 @@ interface JWVideoPlayerProps {
   onProgress?: (currentTime: number, duration: number) => void;
   onFallbackToEmbed?: () => void;
 }
+
+const isHlsSource = (url: string) => /\.m3u8(\?|$)/i.test(url);
 
 export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
   src,
@@ -277,7 +280,7 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
     };
     const onError = () => {
       // If direct video fails without .mp4 extension, try appending .mp4
-      if (v && src && !src.endsWith('.mp4') && !src.includes('.mp4?') && !src.includes('googlevideo.com')) {
+      if (v && src && !isHlsSource(src) && !src.endsWith('.mp4') && !src.includes('.mp4?') && !src.includes('googlevideo.com')) {
         const withMp4 = src + '.mp4';
         if (v.src !== withMp4) {
           v.src = withMp4;
@@ -313,6 +316,47 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
     };
   }, [src]);
 
+  // HLS streams (e.g. vidhide) need hls.js outside Safari's native support
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !isHlsSource(src)) return;
+
+    if (v.canPlayType('application/vnd.apple.mpegurl')) {
+      v.src = src;
+      return;
+    }
+
+    let hls: Hls | null = null;
+    let cancelled = false;
+
+    import('hls.js').then(({ default: HlsLib }) => {
+      if (cancelled) return;
+      if (!HlsLib.isSupported()) {
+        v.src = src;
+        return;
+      }
+
+      const instance = new HlsLib();
+      hls = instance;
+      instance.on(HlsLib.Events.ERROR, (_event, data) => {
+        if (!data.fatal) return;
+        instance.destroy();
+        setIsBuffering(false);
+        setError('Direct video stream gagal diputar atau format tidak didukung.');
+        if (onFallbackToEmbed) {
+          onFallbackToEmbed();
+        }
+      });
+      instance.loadSource(src);
+      instance.attachMedia(v);
+    });
+
+    return () => {
+      cancelled = true;
+      hls?.destroy();
+    };
+  }, [src]);
+
   useEffect(() => {
     return () => {
       if (document.fullscreenElement === containerRef.current) {
@@ -333,7 +377,7 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
       {/* HTML5 Video Element */}
       <video
         ref={videoRef}
-        src={src}
+        src={isHlsSource(src) ? undefined : src}
         poster={poster}
         className="w-full h-full object-contain cursor-pointer"
         onClick={togglePlay}
