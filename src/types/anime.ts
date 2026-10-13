@@ -155,9 +155,14 @@ export interface AnimeThemeSongs {
 
 export interface AnimeExtraInfo {
   mal_id?: number | null;
+  anilist_id?: number | null;
+  /** Fallback synopsis (English) for anime without one on Otakudesu */
+  synopsis?: string | null;
+  synopsis_source?: 'MyAnimeList' | 'AniList' | 'Kitsu' | null;
   title_english?: string | null;
   title_japanese?: string | null;
   score?: number | null;
+  score_source?: 'MAL' | 'AniList' | null;
   scored_by?: number | null;
   rank?: number | null;
   popularity?: number | null;

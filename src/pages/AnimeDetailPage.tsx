@@ -228,6 +228,10 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
   }, [anime?.title, anime?.genres, slug]);
 
   // CONDITIONAL RENDERING (AFTER ALL HOOKS)
+  // Otakudesu leaves the synopsis empty for some anime; fall back to the metadata APIs
+  const usingFallbackSynopsis = !anime?.synopsis?.trim() && !!extraInfo?.synopsis;
+  const synopsis = usingFallbackSynopsis ? extraInfo?.synopsis : anime?.synopsis;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#121214] flex flex-col items-center justify-center pt-20 text-white/60">
@@ -400,7 +404,9 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
               {extraInfo?.score && (
                 <span className="px-3 py-1 rounded-full bg-amber-400/15 border border-amber-400/30 text-amber-300 font-bold flex items-center gap-1.5">
                   <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                  <span>{extraInfo.score} (MAL)</span>
+                  <span>
+                    {extraInfo.score.toFixed(1)} ({extraInfo.score_source || 'MAL'})
+                  </span>
                 </span>
               )}
               {extraInfo?.rank && (
@@ -458,9 +464,15 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
                   !showFullSynopsis ? 'line-clamp-4 sm:line-clamp-5' : ''
                 }`}
               >
-                {anime.synopsis || 'Sinopsis belum tersedia untuk anime ini.'}
+                {synopsis ||
+                  (loadingExtra ? 'Memuat sinopsis...' : 'Sinopsis belum tersedia untuk anime ini.')}
               </p>
-              {anime.synopsis && anime.synopsis.length > 250 && (
+              {usingFallbackSynopsis && (
+                <p className="mt-1.5 text-[11px] text-white/40">
+                  Sinopsis dari {extraInfo?.synopsis_source} (Bahasa Inggris)
+                </p>
+              )}
+              {synopsis && synopsis.length > 250 && (
                 <button
                   onClick={() => setShowFullSynopsis(!showFullSynopsis)}
                   className="mt-2 text-xs font-semibold text-white underline hover:text-white/80"

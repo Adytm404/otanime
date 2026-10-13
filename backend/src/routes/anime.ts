@@ -138,8 +138,8 @@ animeRouter.get('/anime/:slug/extra', async (c) => {
   const cacheKey = `anime:extra:${slug}`;
   const cached = getCache<any>(cacheKey);
 
-  // If cached and contains a valid trailer, return cached immediately unless refresh requested
-  if (!refresh && cached && cached.trailer?.embed_url) {
+  // Serve from cache unless the last lookup found nothing useful (then retry) or refresh is requested
+  if (!refresh && cached && (cached.trailer?.embed_url || cached.synopsis)) {
     return c.json({ success: true, cached: true, data: cached });
   }
 
@@ -151,7 +151,7 @@ animeRouter.get('/anime/:slug/extra', async (c) => {
   }
 
   const data = await getAnimeExtraDetails(detail);
-  const ttl = data.trailer?.embed_url ? 86400 : 300;
+  const ttl = data.trailer?.embed_url || data.synopsis ? 86400 : 300;
   setCache(cacheKey, data, ttl);
   return c.json({ success: true, cached: false, data });
 });
