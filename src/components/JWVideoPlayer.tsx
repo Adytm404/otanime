@@ -605,8 +605,12 @@ export const JWVideoPlayer: React.FC<JWVideoPlayerProps> = ({
         </div>
       )}
 
-      {/* JWPlayer Style Official Watermark: OTANIME */}
-      <div className="absolute top-4 right-5 z-30 pointer-events-none transition-opacity duration-300">
+      {/* JWPlayer Style Official Watermark: OTANIME (shown and hidden together with the controls) */}
+      <div
+        className={`absolute top-4 right-5 z-30 pointer-events-none transition-opacity duration-300 ${
+          controlsVisible ? 'opacity-100' : 'opacity-0'
+        }`}
+      >
         <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/15 shadow-lg shadow-black/50 opacity-80 group-hover:opacity-100">
           <div className="w-3.5 h-3.5 rounded-full bg-white/20 flex items-center justify-center p-0.5">
             <svg
