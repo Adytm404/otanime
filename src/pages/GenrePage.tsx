@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { fetchGenreList, fetchAnimeByGenre } from '../services/otakudesuApi';
 import { GenreAnimeItem, AnimeGenre } from '../types/anime';
 import { AnimeCard } from '../components/AnimeCard';
+import { AgeGateModal } from '../components/AgeGateModal';
+import { ADULT_GENRE_SLUGS, useAgeGate } from '../utils/ageGate';
 import {
   Filter,
   Check,
@@ -35,6 +37,15 @@ export const GenrePage: React.FC = () => {
   const [hasNextPage, setHasNextPage] = useState<boolean>(true);
 
   const observerRef = useRef<HTMLDivElement>(null);
+
+  const ageGate = useAgeGate(selectedSlugs);
+  // Declining the age gate just drops the adult genres from the filter
+  const cancelAdultGenres = () => {
+    setSelectedSlugs((prev) => prev.filter((s) => !ADULT_GENRE_SLUGS.includes(s.toLowerCase())));
+    if (genreSlug && ADULT_GENRE_SLUGS.includes(genreSlug.toLowerCase())) {
+      navigate('/genres', { replace: true });
+    }
+  };
 
   // Sync route param with selected slugs if param changes
   useEffect(() => {
@@ -187,7 +198,20 @@ export const GenrePage: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#121214] text-white selection:bg-white selection:text-black pt-24 sm:pt-28 pb-24">
+    <>
+    {ageGate.blocked && (
+      <AgeGateModal
+        description="Genre Ecchi berisi anime dengan konten yang hanya cocok untuk penonton berusia 18 tahun ke atas."
+        onConfirm={ageGate.confirm}
+        onCancel={cancelAdultGenres}
+      />
+    )}
+    <div
+      aria-hidden={ageGate.blocked || undefined}
+      className={`min-h-screen bg-[#121214] text-white selection:bg-white selection:text-black pt-24 sm:pt-28 pb-24 ${
+        ageGate.blocked ? 'blur-xl pointer-events-none select-none' : ''
+      }`}
+    >
       <div className="max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-10">
         {/* Page Header */}
         <div className="mb-6 sm:mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
@@ -416,5 +440,6 @@ export const GenrePage: React.FC = () => {
         </section>
       </div>
     </div>
+    </>
   );
 };

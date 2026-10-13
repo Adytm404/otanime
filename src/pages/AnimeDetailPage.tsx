@@ -5,6 +5,8 @@ import { AnimeDetail, AnimeItem, AnimeExtraInfo, WatchHistoryItem } from '../typ
 import { AnimeCard } from '../components/AnimeCard';
 import { parseEpisodeInfo } from '../utils/formatters';
 import { useDocumentTitle } from '../utils/useDocumentTitle';
+import { useAgeGate } from '../utils/ageGate';
+import { AgeGateModal } from '../components/AgeGateModal';
 import {
   Play,
   Heart,
@@ -89,6 +91,7 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
   }, [slug]);
 
   useDocumentTitle(anime?.title);
+  const ageGate = useAgeGate(anime?.genres);
 
   // ALL HOOKS MUST BE CALLED UNCONDITIONALLY BEFORE CONDITIONAL RETURNS
   const sortedEpisodes = useMemo(() => {
@@ -261,7 +264,14 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-[#121214] text-white selection:bg-white selection:text-black">
+    <>
+    {ageGate.blocked && <AgeGateModal title={anime.title} onConfirm={ageGate.confirm} />}
+    <div
+      aria-hidden={ageGate.blocked || undefined}
+      className={`min-h-screen bg-[#121214] text-white selection:bg-white selection:text-black ${
+        ageGate.blocked ? 'blur-xl pointer-events-none select-none' : ''
+      }`}
+    >
       {/* Hero Backdrop with Gradient Overlay */}
       <div className="relative w-full h-[50vh] sm:h-[60vh] max-h-[580px] overflow-hidden pointer-events-none">
         <img
@@ -832,5 +842,6 @@ export const AnimeDetailPage: React.FC<AnimeDetailPageProps> = ({
         </div>
       )}
     </div>
+    </>
   );
 };

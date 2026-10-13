@@ -11,6 +11,8 @@ import { EpisodeDetail, AnimeDetail, MirrorStream, AnimeItem, WatchHistoryItem }
 import { parseEpisodeInfo } from '../utils/formatters';
 import { useDocumentTitle } from '../utils/useDocumentTitle';
 import { JWVideoPlayer } from '../components/JWVideoPlayer';
+import { AgeGateModal } from '../components/AgeGateModal';
+import { useAgeGate } from '../utils/ageGate';
 import {
   ChevronLeft,
   ChevronRight,
@@ -27,7 +29,8 @@ import {
   Search,
   ExternalLink,
   RefreshCw,
-  Video
+  Video,
+  Lock
 } from 'lucide-react';
 
 // Hosts that refuse to play inside a sandboxed iframe ("not available due to sandboxed iframe")
@@ -200,6 +203,7 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
   }, [animeSlug, episodeSlugParam]);
 
   useDocumentTitle(episode?.title || anime?.title);
+  const ageGate = useAgeGate(anime?.genres);
 
   // Scroll active episode into view
   useEffect(() => {
@@ -356,7 +360,14 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
   );
 
   return (
-    <div className="min-h-screen bg-[#121214] text-white selection:bg-white selection:text-black pt-16 sm:pt-20 pb-20">
+    <>
+    {ageGate.blocked && <AgeGateModal title={anime?.title} onConfirm={ageGate.confirm} />}
+    <div
+      aria-hidden={ageGate.blocked || undefined}
+      className={`min-h-screen bg-[#121214] text-white selection:bg-white selection:text-black pt-16 sm:pt-20 pb-20 ${
+        ageGate.blocked ? 'blur-xl pointer-events-none select-none' : ''
+      }`}
+    >
       <div className="max-w-[1520px] mx-auto px-3 sm:px-6 lg:px-10">
         {/* Navigation Breadcrumb & Back button */}
         <div className="flex items-center justify-between py-3 mb-2 text-xs sm:text-sm text-white/60">
@@ -396,7 +407,13 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
           <div className={isTheaterMode ? 'w-full' : 'lg:col-span-8 xl:col-span-9'}>
             {/* Video Frame */}
             <div className="relative w-full aspect-video bg-black rounded-2xl overflow-hidden border border-white/10 shadow-2xl shadow-black/80">
-              {resolvingMirror ? (
+              {ageGate.blocked ? (
+                // Player stays unmounted until the viewer confirms their age (no autoplay/sound)
+                <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-white/40">
+                  <Lock className="w-8 h-8" />
+                  <span className="text-xs">Konten 18+</span>
+                </div>
+              ) : resolvingMirror ? (
                 <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-white/60">
                   <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                   <span className="text-xs">Menghubungkan ke Mirror...</span>
@@ -772,5 +789,6 @@ export const AnimeWatchPage: React.FC<AnimeWatchPageProps> = ({
         </div>
       </div>
     </div>
+    </>
   );
 };
